@@ -1,375 +1,409 @@
 <!doctype html>
 <html lang="cs">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rytíř vs. Bandité — mini hra</title>
-  <style>
-    :root {
-      --bg:#0f0f12;
-      --card:#1a1d24;
-      --muted:#9aa3b2;
-      --txt:#e7ecf4;
-      --accent:#e2b714;
-      --good:#3ddc97;
-      --bad:#ff5a5f;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; font-family:system-ui,Segoe UI,Roboto,Inter,Arial;
-      background:radial-gradient(1200px 600px at 50% -10%, #1d2230 0%, #0d0f14 60%, #0a0c10 100%);
-      color:var(--txt); display:flex; min-height:100svh; align-items:center; justify-content:center; padding:16px;
-    }
-    .wrap{width:100%; max-width:900px}
-    .title{
-      text-align:center; margin-bottom:12px; letter-spacing:.5px;
-      font-weight:800; font-size: clamp(22px, 4.5vw, 34px);
-    }
-    .title span{color:var(--accent)}
-    .board{
-      display:grid; gap:16px;
-      grid-template-columns: 1fr;
-    }
-    @media (min-width:800px){
-      .board{grid-template-columns: 1.2fr 1fr;}
-    }
-    .card{
-      background:linear-gradient(180deg, rgba(226,183,20,.08), transparent 35%) , var(--card);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:18px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,.35);
-    }
-    .row{display:flex; gap:12px; align-items:center; justify-content:space-between}
-    .unit{
-      display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:center;
-      padding:10px; border-radius:14px; background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.05)
-    }
-    .unit .avatar{
-      width:64px; height:64px; border-radius:12px; display:grid; place-items:center;
-      background:linear-gradient(135deg, rgba(226,183,20,.15), rgba(255,255,255,.03));
-      border:1px solid rgba(255,255,255,.08); font-size:28px
-    }
-    .unit h3{margin:0 0 4px 0; font-size:18px}
-    .tag{font-size:12px; color:var(--muted)}
-    .bar{
-      height:12px; width:100%; background:#2a2f3a; border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,.06)
-    }
-    .hp{height:100%; background:linear-gradient(90deg, var(--good), #7eedc7); width:100%; transition:width .35s ease}
-    .en-hp{background:linear-gradient(90deg, #ff7b7f, var(--bad))}
-    .stats{display:flex; gap:10px; color:var(--muted); font-size:12px}
-    .big{
-      font-size:30px; font-weight:800; letter-spacing:.5px; color:var(--accent)
-    }
-    .log{
-      height:210px; overflow:auto; background:#11151d; border:1px solid rgba(255,255,255,.06);
-      border-radius:12px; padding:10px; font-size:14px; line-height:1.35
-    }
-    .log p{margin:.35em 0}
-    .log .good{color:var(--good)}
-    .log .bad{color:var(--bad)}
-    .controls{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px}
-    .btn{
-      appearance:none; border:none; padding:12px 14px; border-radius:12px;
-      background:#222735; color:#fff; font-weight:700; letter-spacing:.3px;
-      border:1px solid rgba(255,255,255,.08); cursor:pointer; transition:.15s transform ease, .15s background;
-      touch-action:manipulation;
-    }
-    .btn:active{transform:translateY(1px)}
-    .btn.primary{background:linear-gradient(180deg, #2d3650, #1f2534)}
-    .btn.accent{background:linear-gradient(180deg, #6b5b1e, #5a4a16); border-color:rgba(226,183,20,.6)}
-    .btn:disabled{opacity:.6; cursor:not-allowed}
-    .hint{font-size:12px; color:var(--muted); margin-top:6px}
-    .footer{opacity:.7; text-align:center; font-size:12px; margin-top:12px}
-    .shake{animation:shake .35s}
-    @keyframes shake {
-      10%, 90% {transform: translateX(-1px)}
-      20%, 80% {transform: translateX(2px)}
-      30%, 50%, 70% {transform: translateX(-4px)}
-      40%, 60% {transform: translateX(4px)}
-    }
-    .pop{animation:pop .3s ease}
-    @keyframes pop{from{transform:scale(.96); opacity:.6} to{transform:scale(1); opacity:1}}
-    .pill{background:#2b3140; padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid rgba(255,255,255,.08)}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Středověká strategie — prototyp</title>
+<style>
+:root{
+  --bg:#0e1015;--card:#171b22;--mut:#93a0b4;--txt:#e7edf6;--ac:#e2b714;--ok:#32d296;--bad:#ff6b6b;--line:#222838
+}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:radial-gradient(1200px 800px at 50% -10%,#1d2230 0,#0e1015 60%,#0a0c12 100%);color:var(--txt)}
+.wrap{max-width:1100px;margin:auto;padding:14px}
+h1{font-size:clamp(20px,4.5vw,28px);margin:6px 0 12px}h1 span{color:var(--ac)}
+.grid{display:grid;gap:12px}
+@media(min-width:980px){.grid{grid-template-columns:1fr 1fr 1.2fr}}
+.card{background:linear-gradient(180deg,rgba(226,183,20,.06),transparent 35%),var(--card);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:12px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.res{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.res .pill{background:#1f2430;border:1px solid rgba(255,255,255,.08);border-radius:999px;padding:8px 10px;font-size:14px;display:flex;align-items:center;gap:6px;justify-content:center}
+.small{font-size:12px;color:var(--mut)}
+.sep{height:1px;background:var(--line);margin:8px 0}
+.btn{appearance:none;border:none;background:#23293a;color:#fff;padding:9px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.08);cursor:pointer;font-weight:700}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn.ac{background:linear-gradient(180deg,#6b5b1e,#4f4113);border-color:rgba(226,183,20,.5)}
+.bad{color:var(--bad)}.good{color:var(--ok)}
+.list{display:grid;gap:8px}
+.item{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:#121722;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px}
+.xs{font-size:12px;color:var(--mut)}
+.bar{height:10px;background:#283043;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+.fill{height:100%;background:linear-gradient(90deg,var(--ok),#86f3c6);width:0%}
+.fill2{background:linear-gradient(90deg,#f5a742,#e2b714)}
+.num{font-weight:800}
+.col{display:flex;flex-direction:column;gap:8px}
+.tag{padding:3px 8px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:#1b2130;font-size:11px}
+.kv{display:grid;grid-template-columns:.8fr 1.2fr;gap:8px}
+@media(max-width:700px){.kv{grid-template-columns:1fr}}
+.log{height:180px;overflow:auto;background:#0d1118;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:8px;font-size:14px}
+.log p{margin:.35em 0}
+.map{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.node{background:#151b25;border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px}
+.center{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hr{height:1px;background:#2a3242;margin:6px 0}
+.footer{opacity:.65;text-align:center;font-size:12px;margin-top:10px}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="title">⚔️ <span>Rytíř</span> vs. Bandité</div>
+<div class="wrap">
+  <h1>🏰 <span>Středověká strategie</span> — sběr surovin, budovy, výcvik, mapa</h1>
 
-    <div class="board">
-      <!-- LEFT: Arena -->
-      <div class="card pop" id="arena">
-        <div class="row" style="gap:16px; align-items:start;">
-          <div class="unit" id="playerCard">
-            <div class="avatar">🛡️</div>
-            <div>
-              <h3>Rytíř <span class="tag" id="playerLvl">(úroveň 1)</span></h3>
-              <div class="bar"><div class="hp" id="playerHp"></div></div>
-              <div class="stats">
-                <span id="playerHpTxt">HP 100/100</span> •
-                <span id="playerStats">ATK 10–16 | BRN 20%</span>
-              </div>
-              <div class="stats">
-                <span class="pill">Lektvary: <b id="pots">3</b></span>
-                <span class="pill">Speciál CD: <b id="cd">0</b></span>
-                <span class="pill">Zlato: <b id="gold">0</b></span>
-              </div>
-            </div>
-          </div>
-
-          <div class="unit" id="enemyCard">
-            <div class="avatar">🗡️</div>
-            <div>
-              <h3 id="enemyName">Bandita (vlna 1)</h3>
-              <div class="bar"><div class="hp en-hp" id="enemyHp"></div></div>
-              <div class="stats">
-                <span id="enemyHpTxt">HP 60/60</span> •
-                <span id="enemyStats">ATK 6–10</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="controls">
-          <button class="btn primary" id="attackBtn">ÚTOK</button>
-          <button class="btn" id="blockBtn">BLOK (+50% obrana)</button>
-          <button class="btn" id="potionBtn">LEKTVAR (+35 HP)</button>
-          <button class="btn accent" id="specialBtn">SPECIÁL (dvojnásobné dmg)</button>
-        </div>
-        <div class="hint">Tip: Blok platí jen proti <b>dalšímu</b> útoku nepřítele. Speciál má cooldown 3 tahy.</div>
-      </div>
-
-      <!-- RIGHT: Log & meta -->
-      <div class="card">
-        <div class="row" style="margin-bottom:8px">
-          <div>
-            <div class="pill">Vlna: <b id="wave">1</b></div>
-          </div>
-          <div class="row" style="gap:8px">
-            <button class="btn" id="restBtn" title="Obnoví 30% HP mezi vlnami (stojí 15 zlata)">Odpočinout (15💰)</button>
-            <button class="btn" id="shopBtn" title="1 lektvar za 25 zlata">Koupit lektvar (25💰)</button>
-            <button class="btn" id="resetBtn">Reset hry</button>
-          </div>
-        </div>
-        <div class="log" id="log"></div>
-        <div class="footer">Uloženo do prohlížeče (localStorage). Vlny se postupně ztěžují. Hodně štěstí, rytíři!</div>
-      </div>
+  <!-- RESOURCES -->
+  <div class="card">
+    <div class="res">
+      <div class="pill">🌲 Dřevo: <b class="num" id="wood">0</b></div>
+      <div class="pill">🪨 Kámen: <b class="num" id="stone">0</b></div>
+      <div class="pill">🍖 Jídlo: <b class="num" id="food">0</b></div>
+      <div class="pill">💰 Mince: <b class="num" id="coins">0</b></div>
     </div>
+    <div class="small">Produkce / min: <span id="prod">–</span></div>
   </div>
 
-  <script>
-    // ======= GAME STATE =======
-    const S = {
-      player: { maxHp: 100, hp: 100, atkMin: 10, atkMax: 16, armor: .20, pots: 3, cd: 0, gold: 0, level: 1 },
-      enemy: { name: "Bandita", maxHp: 60, hp: 60, atkMin: 6, atkMax: 10, wave: 1 },
-      flags: { playerBlocked:false },
+  <div class="grid">
+    <!-- BUILDINGS -->
+    <div class="card">
+      <div class="row"><h3 style="margin:0">🏗 Budovy</h3><span class="tag">1 stavba najednou</span></div>
+      <div class="sep"></div>
+      <div class="list" id="buildings"></div>
+      <div class="sep"></div>
+      <div id="buildQueue" class="xs">Žádná stavba neprobíhá.</div>
+    </div>
+
+    <!-- BARRACKS / TRAINING -->
+    <div class="card">
+      <div class="row"><h3 style="margin:0">⚔️ Výcvik jednotek</h3><span class="tag">časovaný výcvik</span></div>
+      <div class="sep"></div>
+      <div class="list" id="training"></div>
+      <div class="sep"></div>
+      <div id="trainQueue" class="xs">Výcvik neprobíhá.</div>
+      <div class="sep"></div>
+      <div class="xs">Síla armády: <b id="power">0</b> (ATK/DEF škálují se Zbrojnicí)</div>
+    </div>
+
+    <!-- WORLD MAP -->
+    <div class="card">
+      <div class="row"><h3 style="margin:0">🗺️ Mapa světa</h3><span class="tag">útoky = loot / riziko ztrát</span></div>
+      <div class="sep"></div>
+      <div class="map" id="world"></div>
+      <div class="sep"></div>
+      <div class="log" id="log"></div>
+      <div class="footer">Ukládá se automaticky (localStorage). Časy běží i offline.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== STATE ===================== */
+const S = {
+  res:{wood:0,stone:0,food:0,coins:0},
+  prod:{wood:0,stone:0,food:0,coins:0},             // per minute
+  buildings:{
+    townhall:{lvl:1, busy:null},
+    lumber:{lvl:1, busy:null},   // píla (dřevo)
+    quarry:{lvl:1, busy:null},   // lom (kámen)
+    farm:{lvl:1, busy:null},     // farma (jídlo)
+    treasury:{lvl:1, busy:null}, // pokladnice (mince)
+    barracks:{lvl:1, busy:null}, // kasárna (rychlost výcviku
+    armory:{lvl:1, busy:null},   // zbrojnice (+ATK/DEF)
+    walls:{lvl:0, busy:null},    // obrana města (ovlivní ztráty při prohře)
+  },
+  units:{
+    archer:{count:0, queue:null},  // {until, qty}
+    knight:{count:0, queue:null},
+  },
+  // multipliers
+  arm:{atk:0, def:0},
+  buildBusy:null,                  // {until, name, targetLvl}
+  lastTick:Date.now(),
+  worldSeed:1                      // pro stabilní mapu
+};
+
+// CENY & PRAVIDLA
+const BDATA = {
+  townhall:{name:"Radnice", icon:"🏛️", base:{wood:50,stone:50,food:20,coins:30}, scale:1.6, time:40, timeScale:1.4, desc:"Zvyšuje max. rozvoj a prodlužuje čas další výstavby (vyšší úroveň = delší stavba)."},
+  lumber:{name:"Pila", icon:"🌲", base:{wood:30,stone:10,food:0,coins:5}, scale:1.45, time:25, timeScale:1.2, prodKey:"wood"},
+  quarry:{name:"Lom", icon:"🪨", base:{wood:10,stone:30,food:0,coins:5}, scale:1.45, time:25, timeScale:1.2, prodKey:"stone"},
+  farm:{name:"Farma", icon:"🌾", base:{wood:15,stone:10,food:20,coins:5}, scale:1.45, time:25, timeScale:1.2, prodKey:"food"},
+  treasury:{name:"Pokladnice", icon:"💰", base:{wood:20,stone:10,food:10,coins:15}, scale:1.45, time:25, timeScale:1.2, prodKey:"coins"},
+  barracks:{name:"Kasárna", icon:"⚔️", base:{wood:40,stone:20,food:20,coins:15}, scale:1.5, time:35, timeScale:1.25, desc:"Rychlejší výcvik (–10% času / lvl)."},
+  armory:{name:"Zbrojnice", icon:"🛡️", base:{wood:35,stone:35,food:20,coins:25}, scale:1.6, time:35, timeScale:1.25, desc:"+8% ATK/DEF / lvl."},
+  walls:{name:"Hradby", icon:"🧱", base:{wood:25,stone:50,food:0,coins:10}, scale:1.5, time:30, timeScale:1.25, desc:"–10% ztráty surovin při prohře / lvl."},
+};
+
+const UDATA = {
+  archer:{name:"Lučišník", icon:"🏹", baseCost:{wood:20,food:10,coins:5}, time:20, atk:12, def:4},
+  knight:{name:"Rytíř",   icon:"🗡️", baseCost:{wood:10,food:20,coins:8}, time:28, atk:8,  def:10},
+};
+
+// MAPA (generátor jednoduchých uzlů)
+function makeWorld(seed=1){
+  const rng = mulberry32(seed);
+  const nodes = [];
+  for(let i=0;i<9;i++){
+    const diff = 1 + Math.floor(rng()*6); // 1–6
+    const power = 30*diff + Math.floor(rng()*20);
+    const loot = {
+      wood: 10*diff + Math.floor(rng()*10),
+      stone:10*diff + Math.floor(rng()*10),
+      food: 10*diff + Math.floor(rng()*10),
+      coins:6*diff + Math.floor(rng()*6),
     };
+    nodes.push({id:i+1, name:`Tábor banditů ${i+1}`, diff, power, loot});
+  }
+  return nodes;
+}
+const WORLD = makeWorld(S.worldSeed);
 
-    // Load from localStorage if exists
-    try {
-      const saved = JSON.parse(localStorage.getItem("knight_bandits_v1"));
-      if (saved?.player && saved?.enemy) Object.assign(S, saved);
-    } catch(e){}
+// RNG helper
+function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+/* ===================== HELPERS ===================== */
+const $=s=>document.querySelector(s);
+function fmt(n){return Math.floor(n).toLocaleString("cs-CZ")}
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function addRes(obj,sign=+1){ for(const k of ["wood","stone","food","coins"]) S.res[k]=Math.max(0,S.res[k]+sign*(obj[k]||0)) }
+function canPay(cost){return ["wood","stone","food","coins"].every(k=>S.res[k]>=(cost[k]||0))}
+function pay(cost){addRes(cost,-1)}
+function now(){return Date.now()}
+/* ===================== SAVE/LOAD ===================== */
+try{const saved=JSON.parse(localStorage.getItem("medieval_strategy_v1"));if(saved){Object.assign(S,saved)}}catch(e){}
+function save(){localStorage.setItem("medieval_strategy_v1",JSON.stringify(S))}
+/* ===================== PRODUCTION ===================== */
+function productionPerMinute(){
+  const out={wood:0,stone:0,food:0,coins:0};
+  const lm=S.buildings.lumber.lvl, q=S.buildings.quarry.lvl, f=S.buildings.farm.lvl, t=S.buildings.treasury.lvl;
+  out.wood = 6*lm + (lm-1)*2;      // škálování
+  out.stone= 5*q  + (q-1)*2;
+  out.food = 6*f  + (f-1)*2;
+  out.coins= 4*t  + (t-1)*2;
+  return out;
+}
+function tickResources(){
+  const nowT = now();
+  const elapsed = Math.max(0, nowT - S.lastTick)/1000; // vteřiny
+  S.lastTick = nowT;
+  // per-second z per-minute
+  S.prod = productionPerMinute();
+  for(const k of ["wood","stone","food","coins"]){
+    const perSec = (S.prod[k]||0)/60;
+    S.res[k] += perSec*elapsed;
+  }
+}
+/* ===================== BUILDINGS ===================== */
+function nextCost(name){
+  const d=BDATA[name]; const lvl=S.buildings[name].lvl;
+  const cost=clone(d.base);
+  const mult = Math.pow(d.scale, Math.max(0,lvl- (name==="walls"?0:1))); // od lvl1
+  for(const k in cost) cost[k]=Math.round(cost[k]*mult);
+  return cost;
+}
+function buildTime(name){
+  const d=BDATA[name]; const lvl=S.buildings[name].lvl;
+  const base = d.time * Math.pow(d.timeScale, Math.max(0,lvl-1));
+  // Radnice prodlužuje časy další stavby (jak jsi psal)
+  const th = S.buildings.townhall.lvl;
+  return Math.round(base * (1 + (th-1)*0.08));
+}
+function startBuild(name){
+  if(S.buildBusy) return log(`⚠️ Už něco stavíš. Počkej na dokončení.`, "bad");
+  const cost = nextCost(name);
+  if(!canPay(cost)) return log(`❌ Nedostatek surovin na vylepšení ${BDATA[name].name}.`, "bad");
+  pay(cost);
+  const t = buildTime(name)*1000;
+  S.buildBusy = {until: now()+t, name, targetLvl: S.buildings[name].lvl+1};
+  log(`🏗️ Začala stavba: <b>${BDATA[name].name} → L${S.buildBusy.targetLvl}</b> (⏳ ${Math.round(t/1000)}s).`, "good");
+  save(); render();
+}
+function finishBuild(){
+  if(!S.buildBusy) return;
+  const {name,targetLvl}=S.buildBusy;
+  S.buildings[name].lvl = targetLvl;
+  S.buildBusy=null;
+  log(`✅ Dokončeno: <b>${BDATA[name].name} L${S.buildings[name].lvl}</b>.`, "good");
+}
+/* ===================== TRAINING ===================== */
+function armoryBonus(){
+  const l=S.buildings.armory.lvl;
+  const atk = 1 + (l-1)*0.08;   // +8% / lvl
+  const def = 1 + (l-1)*0.08;
+  S.arm={atk,def};
+}
+function barracksSpeed(){
+  const l=S.buildings.barracks.lvl;
+  return 1 - Math.min(0.1*(l-1),0.7); // –10% / lvl (cap 70%)
+}
+function unitCost(type, qty){
+  const c=clone(UDATA[type].baseCost);
+  for(const k in c) c[k]*=qty;
+  return c;
+}
+function trainTime(type, qty){
+  const base = UDATA[type].time*qty;
+  return Math.round(base * barracksSpeed()); // zrychlení z kasáren
+}
+function startTrain(type, qty=1){
+  if(qty<=0) return;
+  if(S.units[type].queue) return log(`⚠️ ${UDATA[type].name} už se cvičí.`, "bad");
+  const cost = unitCost(type, qty);
+  if(!canPay(cost)) return log(`❌ Nedostatek surovin na výcvik: ${UDATA[type].name} ×${qty}.`, "bad");
+  pay(cost);
+  const t = trainTime(type, qty)*1000;
+  S.units[type].queue = {until: now()+t, qty};
+  log(`🏹 Zahájen výcvik: <b>${UDATA[type].name} ×${qty}</b> (⏳ ${Math.round(t/1000)}s).`, "good");
+  save(); render();
+}
+function finishTrain(type){
+  const q=S.units[type].queue; if(!q) return;
+  S.units[type].count += q.qty;
+  S.units[type].queue=null;
+  log(`✅ Dokončen výcvik: <b>${UDATA[type].name} ×${q.qty}</b>.`, "good");
+}
+/* ===================== COMBAT ===================== */
+function armyPower(){
+  armoryBonus();
+  const A=S.units.archer.count, K=S.units.knight.count;
+  const atk = A*UDATA.archer.atk + K*UDATA.knight.atk;
+  const def = A*UDATA.archer.def + K*UDATA.knight.def;
+  const total = (atk*S.arm.atk + def*S.arm.def);
+  return Math.round(total);
+}
+function onAttack(node){
+  const power = armyPower();
+  const enemy = node.power + rnd(-10,10);
+  const logHead = `🗺️ Útok na <b>${node.name}</b> (nepř. síla ${enemy}) vs tvoje síla <b>${power}</b>.`;
+  if(power>=enemy){
+    // WIN
+    addRes(node.loot,+1);
+    log(`${logHead} <span class="good">Výhra!</span> Zisk: 🌲+${node.loot.wood}, 🪨+${node.loot.stone}, 🍖+${node.loot.food}, 💰+${node.loot.coins}.`,"good");
+  }else{
+    // LOSE → ztráty surovin (méně s hradbami)
+    const w=S.buildings.walls.lvl; const reduce=Math.min(0.1*w,0.7); // –10%/lvl, cap 70%
+    const loss=clone(node.loot);
+    for(const k in loss) loss[k]=Math.round(loss[k]*(1-reduce));
+    addRes(loss,-1);
+    log(`${logHead} <span class="bad">Prohra!</span> Ztráta: 🌲−${loss.wood}, 🪨−${loss.stone}, 🍖−${loss.food}, 💰−${loss.coins}.`,"bad");
+  }
+  save(); render();
+}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+/* ===================== TIMERS LOOP ===================== */
+function processTimers(){
+  const t=now();
+  // stavba
+  if(S.buildBusy && t>=S.buildBusy.until){ finishBuild(); }
+  // výcvik
+  for(const key of ["archer","knight"]){
+    if(S.units[key].queue && t>=S.units[key].queue.until){ finishTrain(key); }
+  }
+}
+function loop(){
+  tickResources();
+  processTimers();
+  render(false);
+  save();
+  requestAnimationFrame(loop);
+}
+/* ===================== UI RENDER ===================== */
+function render(force=true){
+  // res
+  $("#wood").textContent=fmt(S.res.wood);
+  $("#stone").textContent=fmt(S.res.stone);
+  $("#food").textContent=fmt(S.res.food);
+  $("#coins").textContent=fmt(S.res.coins);
+  const p = S.prod; $("#prod").textContent = `🌲 ${Math.round(p.wood)}/m • 🪨 ${Math.round(p.stone)}/m • 🍖 ${Math.round(p.food)}/m • 💰 ${Math.round(p.coins)}/m`;
 
-    const $ = sel => document.querySelector(sel);
-    const logEl = $("#log");
-    const elements = {
-      playerHp: $("#playerHp"), enemyHp: $("#enemyHp"),
-      playerHpTxt: $("#playerHpTxt"), enemyHpTxt: $("#enemyHpTxt"),
-      playerStats: $("#playerStats"), enemyStats: $("#enemyStats"),
-      pots: $("#pots"), cd: $("#cd"), gold: $("#gold"),
-      wave: $("#wave"), enemyName: $("#enemyName"), playerLvl: $("#playerLvl"),
-      playerCard: $("#playerCard"), enemyCard: $("#enemyCard"),
-      attackBtn: $("#attackBtn"), blockBtn: $("#blockBtn"),
-      potionBtn: $("#potionBtn"), specialBtn: $("#specialBtn"),
-      restBtn: $("#restBtn"), shopBtn: $("#shopBtn"), resetBtn: $("#resetBtn"),
-    };
+  // buildings list
+  const bEl=$("#buildings"); bEl.innerHTML="";
+  for(const key of ["townhall","lumber","quarry","farm","treasury","barracks","armory","walls"]){
+    const b=S.buildings[key], d=BDATA[key], cost=nextCost(key); const time=buildTime(key);
+    const item=document.createElement("div"); item.className="item";
+    const left=document.createElement("div");
+    left.innerHTML=`<div class="row"><div><b>${d.icon} ${d.name}</b> <span class="tag">L${b.lvl}</span></div></div>
+      <div class="xs">${d.desc?d.desc:"Zvyšuje produkci " + (d.prodKey?`(${d.prodKey})`:"")} </div>
+      <div class="xs">Cena: 🌲 ${fmt(cost.wood||0)} • 🪨 ${fmt(cost.stone||0)} • 🍖 ${fmt(cost.food||0)} • 💰 ${fmt(cost.coins||0)}</div>
+      <div class="xs">Čas stavby: ⏳ ${time}s</div>`;
+    const right=document.createElement("div");
+    const btn=document.createElement("button"); btn.className="btn ac"; btn.textContent="Vylepšit";
+    btn.disabled=!!S.buildBusy || !canPay(cost);
+    btn.onclick=()=>startBuild(key);
+    right.appendChild(btn);
+    item.append(left,right);
+    bEl.appendChild(item);
+  }
+  // build queue
+  const bq=$("#buildQueue");
+  if(S.buildBusy){
+    const tLeft=Math.max(0, S.buildBusy.until - now());
+    const pct=100 - (tLeft / (buildTime(S.buildBusy.name)*1000))*100;
+    bq.innerHTML=`Staví se: <b>${BDATA[S.buildBusy.name].name} → L${S.buildings[S.buildBusy.name].lvl+1}</b>
+      <div class="bar"><div class="fill fill2" style="width:${Math.max(0,Math.min(100,pct))}%"></div></div>
+      <span class="xs">Zbývá: ${Math.ceil(tLeft/1000)} s</span>`;
+  }else bq.textContent="Žádná stavba neprobíhá.";
 
-    function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
-    function rnd(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
-    function save(){ localStorage.setItem("knight_bandits_v1", JSON.stringify(S)); }
-    function clearSave(){ localStorage.removeItem("knight_bandits_v1"); }
-
-    // ======= RENDER =======
-    function render(){
-      // HP bars
-      elements.playerHp.style.width = (S.player.hp / S.player.maxHp * 100) + "%";
-      elements.enemyHp.style.width = (S.enemy.hp / S.enemy.maxHp * 100) + "%";
-      elements.playerHpTxt.textContent = `HP ${S.player.hp}/${S.player.maxHp}`;
-      elements.enemyHpTxt.textContent = `HP ${S.enemy.hp}/${S.enemy.maxHp}`;
-      elements.playerStats.textContent = `ATK ${S.player.atkMin}–${S.player.atkMax} | BRN ${Math.round(S.player.armor*100)}%`;
-      elements.enemyStats.textContent = `ATK ${S.enemy.atkMin}–${S.enemy.atkMax}`;
-      elements.pots.textContent = S.player.pots;
-      elements.cd.textContent = S.player.cd;
-      elements.gold.textContent = S.player.gold;
-      elements.wave.textContent = S.enemy.wave;
-      elements.enemyName.textContent = `${S.enemy.name} (vlna ${S.enemy.wave})`;
-      elements.playerLvl.textContent = `(úroveň ${S.player.level})`;
-
-      // Buttons availability
-      elements.potionBtn.disabled = S.player.pots<=0 || S.player.hp===S.player.maxHp;
-      elements.specialBtn.disabled = S.player.cd>0;
-      elements.restBtn.disabled = S.player.gold<15 || S.enemy.hp < S.enemy.maxHp; // jen mezi vlnami
-      elements.shopBtn.disabled = S.player.gold<25;
-      save();
+  // training list
+  const tEl=$("#training"); tEl.innerHTML="";
+  for(const k of ["archer","knight"]){
+    const u=S.units[k], d=UDATA[k];
+    const item=document.createElement("div"); item.className="item";
+    const left=document.createElement("div");
+    left.innerHTML=`<div class="row"><div><b>${d.icon} ${d.name}</b> <span class="tag">ks: ${u.count}</span></div>
+      <span class="xs">ATK ${d.atk} • DEF ${d.def} (bonus zbrojnice: +${Math.round((S.arm.atk-1)*100)}%/+${Math.round((S.arm.def-1)*100)}%)</span></div>
+      <div class="xs">Cena / ks: 🌲 ${d.baseCost.wood||0} • 🍖 ${d.baseCost.food||0} • 💰 ${d.baseCost.coins||0}</div>
+      <div class="row">
+        <input type="number" min="1" value="1" style="width:80px;background:#0f1420;border:1px solid #2a3242;color:#fff;border-radius:8px;padding:6px">
+        <button class="btn">Cvičit</button>
+      </div>`;
+    const input=left.querySelector("input"); const btn=left.querySelector("button");
+    btn.onclick=()=>startTrain(k, Math.max(1,parseInt(input.value||"1")));
+    const right=document.createElement("div"); right.style.minWidth="180px";
+    // queue/progress
+    if(u.queue){
+      const total = trainTime(k, u.queue.qty)*1000; const leftMs = Math.max(0,u.queue.until - now());
+      const pct = 100 - (leftMs/total)*100;
+      right.innerHTML=`<div class="xs">Ve výcviku: ×${u.queue.qty}</div>
+        <div class="bar"><div class="fill" style="width:${Math.max(0,Math.min(100,pct))}%"></div></div>
+        <div class="xs">Zbývá: ${Math.ceil(leftMs/1000)} s</div>`;
+    } else {
+      right.innerHTML=`<div class="xs">Připraveno k výcviku.</div>`;
     }
+    item.append(left,right); tEl.appendChild(item);
+  }
+  // train queue summary
+  const tq=$("#trainQueue");
+  const qA=S.units.archer.queue, qK=S.units.knight.queue;
+  if(qA || qK){
+    const rows=[];
+    if(qA){ rows.push(`🏹 ×${qA.qty} — ${Math.ceil((qA.until-now())/1000)}s`); }
+    if(qK){ rows.push(`🗡️ ×${qK.qty} — ${Math.ceil((qK.until-now())/1000)}s`); }
+    tq.innerHTML="Probíhá výcvik: "+rows.join(" | ");
+  } else tq.textContent="Výcvik neprobíhá.";
 
-    function log(msg, cls=""){
-      const p = document.createElement("p");
-      p.innerHTML = msg;
-      if (cls) p.classList.add(cls);
-      logEl.appendChild(p);
-      logEl.scrollTop = logEl.scrollHeight;
-    }
+  // army power
+  $("#power").textContent=fmt(armyPower());
 
-    // ======= COMBAT =======
-    function playerAttack(mult=1){
-      const base = rnd(S.player.atkMin, S.player.atkMax);
-      const crit = Math.random()<0.15 ? Math.round(base*0.75) : 0;
-      let dmg = Math.round((base + crit) * mult);
-      S.enemy.hp = clamp(S.enemy.hp - dmg, 0, S.enemy.maxHp);
-      $("#enemyCard").classList.add("shake"); setTimeout(()=>$("#enemyCard").classList.remove("shake"), 300);
-      log(`🗡️ Rytíř udeřil za <b>${dmg}</b>${crit?` (krit +${crit})`:``}.`, "good");
-      render();
-      if (S.enemy.hp<=0){ winWave(); return; }
-      setTimeout(enemyTurn, 450);
-    }
+  // world map
+  const wEl=$("#world"); wEl.innerHTML="";
+  WORLD.forEach(n=>{
+    const box=document.createElement("div"); box.className="node";
+    box.innerHTML=`<div class="center"><b>${n.name}</b><span class="tag">Obtížnost ${n.diff}</span></div>
+      <div class="hr"></div>
+      <div class="xs">Síla nepřítele: <b>${n.power}</b></div>
+      <div class="xs">Kořist: 🌲${n.loot.wood} • 🪨${n.loot.stone} • 🍖${n.loot.food} • 💰${n.loot.coins}</div>
+      <div style="margin-top:6px" class="row"><button class="btn ac">Zaútočit</button></div>`;
+    box.querySelector("button").onclick=()=>onAttack(n);
+    wEl.appendChild(box);
+  });
+}
 
-    function playerBlock(){
-      S.flags.playerBlocked = true;
-      log(`🛡️ Rytíř se připravuje blokovat další útok (+50% obrana).`, "good");
-      render();
-      setTimeout(enemyTurn, 350);
-    }
+const logEl=$("#log");
+function log(msg,cls=""){const p=document.createElement("p");p.innerHTML=msg;if(cls)p.classList.add(cls);logEl.appendChild(p);logEl.scrollTop=logEl.scrollHeight}
 
-    function drinkPotion(){
-      if (S.player.pots<=0) return;
-      const heal = Math.round(S.player.maxHp*0.35);
-      S.player.pots--; S.player.hp = clamp(S.player.hp + heal, 0, S.player.maxHp);
-      log(`🧪 Vypil lektvar a uzdravil <b>${heal}</b> HP.`, "good");
-      render();
-      setTimeout(enemyTurn, 350);
-    }
-
-    function specialStrike(){
-      if (S.player.cd>0) return;
-      S.player.cd = 3;
-      playerAttack(2);
-    }
-
-    function enemyTurn(){
-      // cooldown tick
-      if (S.player.cd>0) S.player.cd--;
-
-      // enemy attack
-      const base = rnd(S.enemy.atkMin, S.enemy.atkMax);
-      const crit = Math.random()<0.1 ? Math.round(base*0.6) : 0;
-      let raw = base + crit;
-
-      // armor & block
-      const armor = S.player.armor + (S.flags.playerBlocked ? 0.5 : 0);
-      S.flags.playerBlocked = false;
-      const dmg = Math.max(1, Math.round(raw * (1 - armor)));
-
-      S.player.hp = clamp(S.player.hp - dmg, 0, S.player.maxHp);
-      $("#playerCard").classList.add("shake"); setTimeout(()=>$("#playerCard").classList.remove("shake"), 300);
-      log(`💥 Nepřítel zasáhl za <b>${dmg}</b>${crit?` (krit +${crit})`:``}.`, "bad");
-
-      render();
-      if (S.player.hp<=0){ gameOver(); }
-    }
-
-    function winWave(){
-      const reward = 10 + S.enemy.wave * 5 + rnd(0,5);
-      S.player.gold += reward;
-      log(`🏆 Vlna ${S.enemy.wave} poražena! Získáváš <b>${reward}💰</b>.`, "good");
-      nextWave();
-    }
-
-    function nextWave(){
-      // scale enemy
-      S.enemy.wave++;
-      const scale = 1 + (S.enemy.wave-1)*0.18;
-      S.enemy.maxHp = Math.round(60 * scale);
-      S.enemy.hp = S.enemy.maxHp;
-      S.enemy.atkMin = Math.round(6 * scale);
-      S.enemy.atkMax = Math.round(10 * scale);
-      S.enemy.name = enemyNameByWave(S.enemy.wave);
-
-      // every 3 waves — level up
-      if ((S.enemy.wave-1)%3===0){
-        S.player.level++;
-        S.player.maxHp += 10;
-        S.player.hp = Math.min(S.player.hp + 10, S.player.maxHp);
-        S.player.atkMin += 2; S.player.atkMax += 2;
-        S.player.armor = clamp(S.player.armor + 0.02, 0, .6);
-        log(`⬆️ Postoupil jsi na <b>úroveň ${S.player.level}</b>! (+HP, +ATK, +BRN)`, "good");
-      }
-      render();
-    }
-
-    function enemyNameByWave(w){
-      if (w%10===0) return "Temný rytíř (boss)";
-      if (w%5===0) return "Zrádný žoldák";
-      if (w%3===0) return "Loupežník veterán";
-      return "Bandita";
-    }
-
-    function gameOver(){
-      disableControls(true);
-      log(`☠️ Padl jsi ve vlně <b>${S.enemy.wave}</b>. Zlato: <b>${S.player.gold}</b>.`, "bad");
-    }
-
-    function disableControls(state){
-      elements.attackBtn.disabled = state;
-      elements.blockBtn.disabled = state;
-      elements.potionBtn.disabled = state || S.player.pots<=0;
-      elements.specialBtn.disabled = state || S.player.cd>0;
-    }
-
-    // ======= META ACTIONS =======
-    elements.attackBtn.onclick = ()=> playerAttack(1);
-    elements.blockBtn.onclick  = ()=> playerBlock();
-    elements.potionBtn.onclick = ()=> drinkPotion();
-    elements.specialBtn.onclick= ()=> specialStrike();
-
-    elements.restBtn.onclick = ()=>{
-      if (S.enemy.hp === S.enemy.maxHp && S.player.gold>=15){
-        const heal = Math.round(S.player.maxHp*0.30);
-        S.player.gold -= 15;
-        S.player.hp = clamp(S.player.hp + heal, 0, S.player.maxHp);
-        log(`🛏️ Odpočinul sis mezi vlnami: +<b>${heal}</b> HP (–15💰).`, "good");
-        render();
-      }
-    };
-
-    elements.shopBtn.onclick = ()=>{
-      if (S.player.gold>=25){
-        S.player.gold -= 25;
-        S.player.pots += 1;
-        log(`🧺 Koupil jsi 1× lektvar (–25💰).`, "good");
-        render();
-      }
-    };
-
-    elements.resetBtn.onclick = ()=>{
-      if (!confirm("Resetovat hru a smazat uložený postup?")) return;
-      clearSave();
-      Object.assign(S.player, { maxHp:100, hp:100, atkMin:10, atkMax:16, armor:.20, pots:3, cd:0, gold:0, level:1 });
-      Object.assign(S.enemy , { name:"Bandita", maxHp:60, hp:60, atkMin:6, atkMax:10, wave:1 });
-      S.flags.playerBlocked=false;
-      logEl.innerHTML="";
-      disableControls(false);
-      render();
-      log("🔄 Hra byla resetována.");
-    };
-
-    // ======= INIT =======
-    function bootstrap(){
-      render();
-      log("👑 Vítej, rytíři! Porážej vlny banditů, využívej blok, lektvary a speciál.");
-      disableControls(false);
-    }
-    bootstrap();
-  </script>
+/* ===================== INIT ===================== */
+function bootstrap(){
+  armoryBonus();
+  render(true);
+  log("👑 Vítej, vladaři! Stavěj, vylepšuj, cvič armádu a bojuj o kořist.");
+}
+bootstrap();
+loop(); // start main loop
+</script>
 </body>
 </html>
