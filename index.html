@@ -3,104 +3,75 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>Survival Web Prototype</title>
+<title>Survival Web Prototype – v2 (AI, den/noc, zvuky, save)</title>
 <style>
   :root{
     --bg:#0f1115; --panel:#151822; --panel2:#1b2030; --acc:#59ffa9; --text:#e9eef7; --muted:#93a1b3; --red:#ff6b6b;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
-  body{
-    margin:0; background:linear-gradient(180deg,#0d1016,#0b0e13 60%,#0a0d12);
-    color:var(--text); font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif; overflow:hidden;
-  }
-  .app{
-    display:grid; grid-template-columns: 280px 1fr 260px; grid-template-rows: 56px 1fr 120px;
-    grid-template-areas:
-      "topbar topbar topbar"
-      "left   main   right"
-      "hud    hud    hud";
-    height:100%;
-    gap:10px; padding:10px;
-  }
-  .card{
-    background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid #22293a; border-radius:16px;
-    box-shadow:0 10px 30px rgba(0,0,0,.35); overflow:hidden;
-  }
-  .topbar{grid-area:topbar; display:flex; align-items:center; justify-content:space-between; padding:8px 12px}
-  .brand{display:flex; gap:10px; align-items:center; font-weight:700; letter-spacing:.5px}
-  .brand .dot{width:10px; height:10px; border-radius:50%; background:var(--acc); box-shadow:0 0 12px var(--acc)}
-  .top-actions{display:flex; gap:8px}
-  button, .btn{
-    background:#20273a; color:var(--text); border:1px solid #2a344d; padding:8px 12px; border-radius:12px;
-    font-weight:600; cursor:pointer; transition:.12s transform,.12s opacity
-  }
-  button:hover{transform:translateY(-1px)}
-  button:active{transform:translateY(0)}
-  .left{grid-area:left; padding:10px; display:flex; flex-direction:column; gap:10px}
-  .right{grid-area:right; padding:10px; display:flex; flex-direction:column; gap:10px}
-  .main{grid-area:main; position:relative}
-  .hud{grid-area:hud; display:flex; gap:10px; align-items:center; padding:10px}
-  /* Canvas wrapper */
-  .game-wrap{position:relative; height:100%}
-  canvas#game{width:100%; height:100%; display:block; background:radial-gradient(1200px 800px at 50% 35%, #0f1420, #0b0f18)}
-  /* Mini mapa */
-  .minimap{position:absolute; right:10px; top:10px; width:140px; height:100px; border-radius:12px; border:1px solid #2a344d; background:#10152388; backdrop-filter: blur(4px); padding:6px}
-  canvas#mini{width:100%; height:100%}
-  /* Notify bar */
-  .notify{position:absolute; left:50%; transform:translateX(-50%); top:10px; background:#0f1422dd; border:1px solid #2a344d;
-    padding:8px 14px; border-radius:12px; font-weight:600; box-shadow:0 6px 20px rgba(0,0,0,.35)}
-  /* Inventory / Craft / Build panels */
+  body{margin:0;background:linear-gradient(180deg,#0d1016,#0b0e13 60%,#0a0d12);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden}
+  .app{display:grid;grid-template-columns:280px 1fr 260px;grid-template-rows:56px 1fr 120px;grid-template-areas:"topbar topbar topbar" "left main right" "hud hud hud";height:100%;gap:10px;padding:10px}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid #22293a;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);overflow:hidden}
+  .topbar{grid-area:topbar;display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
+  .brand{display:flex;gap:10px;align-items:center;font-weight:700;letter-spacing:.5px}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)}
+  .top-actions{display:flex;gap:8px;flex-wrap:wrap}
+  button,.btn{background:#20273a;color:var(--text);border:1px solid #2a344d;padding:8px 12px;border-radius:12px;font-weight:600;cursor:pointer;transition:.12s transform,.12s opacity}
+  button:hover{transform:translateY(-1px)} button:active{transform:translateY(0)}
+  .left{grid-area:left;padding:10px;display:flex;flex-direction:column;gap:10px}
+  .right{grid-area:right;padding:10px;display:flex;flex-direction:column;gap:10px}
+  .main{grid-area:main;position:relative}
+  .hud{grid-area:hud;display:flex;gap:10px;align-items:center;padding:10px}
+  .game-wrap{position:relative;height:100%}
+  canvas#game{width:100%;height:100%;display:block;background:radial-gradient(1200px 800px at 50% 35%, #0f1420, #0b0f18)}
+  .minimap{position:absolute;right:10px;top:10px;width:140px;height:100px;border-radius:12px;border:1px solid #2a344d;background:#10152388;backdrop-filter: blur(4px);padding:6px}
+  canvas#mini{width:100%;height:100%}
+  .notify{position:absolute;left:50%;transform:translateX(-50%);top:10px;background:#0f1422dd;border:1px solid #2a344d;padding:8px 14px;border-radius:12px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.35)}
   .panel{padding:12px}
-  .section-title{font-weight:800; margin-bottom:8px; letter-spacing:.4px}
-  .muted{color:var(--muted); font-size:12px}
-  .grid{display:grid; gap:8px}
+  .section-title{font-weight:800;margin-bottom:8px;letter-spacing:.4px}
+  .muted{color:var(--muted);font-size:12px}
+  .grid{display:grid;gap:8px}
   .inv-grid{grid-template-columns: repeat(5, 1fr)}
-  .slot{
-    aspect-ratio:1/1; border:1px dashed #2f3a56; border-radius:12px; display:flex; align-items:center; justify-content:center;
-    font-weight:700; color:#9fb3d1; background:#0f1320; position:relative; user-select:none
-  }
-  .slot .qty{position:absolute; right:6px; bottom:4px; font-size:12px; color:#b6c5db}
-  .equip{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
-  .hotbar{display:grid; grid-template-columns:repeat(5,1fr); gap:8px}
-  .list{display:flex; flex-direction:column; gap:8px; max-height:260px; overflow:auto}
-  .list-item{display:flex; justify-content:space-between; align-items:center; padding:8px; border:1px solid #2a344d; border-radius:10px; background:#0f1320}
-  .ghost{opacity:.5; outline:2px dashed var(--acc)}
-  /* Status bars */
-  .bars{display:grid; grid-template-columns: repeat(6, 1fr); gap:8px; width:100%}
-  .bar{background:#0f1320; border:1px solid #2a344d; border-radius:999px; height:14px; overflow:hidden; position:relative}
-  .bar > i{position:absolute; inset:0; width:50%; background:linear-gradient(90deg, #2de3a0, #79ffc8)}
-  .bar.red > i{background:linear-gradient(90deg,#ff6b6b,#ffa8a8)}
+  .slot{aspect-ratio:1/1;border:1px dashed #2f3a56;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#9fb3d1;background:#0f1320;position:relative;user-select:none}
+  .slot .qty{position:absolute;right:6px;bottom:4px;font-size:12px;color:#b6c5db}
+  .equip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .hotbar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto}
+  .list-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid #2a344d;border-radius:10px;background:#0f1320}
+  .ghost{opacity:.5;outline:2px dashed var(--acc)}
+  .bars{display:grid;grid-template-columns: repeat(6, 1fr);gap:8px;width:100%}
+  .bar{background:#0f1320;border:1px solid #2a344d;border-radius:999px;height:14px;overflow:hidden;position:relative}
+  .bar > i{position:absolute;inset:0;width:50%;background:linear-gradient(90deg, #2de3a0, #79ffc8)}
+  .bar.red> i{background:linear-gradient(90deg,#ff6b6b,#ffa8a8)}
   .bar.blue> i{background:linear-gradient(90deg,#68a5ff,#a2c4ff)}
   .bar.gold> i{background:linear-gradient(90deg,#ffd166,#ffe29a)}
   .bar.violet> i{background:linear-gradient(90deg,#b388ff,#e1c8ff)}
-  .bar-label{position:absolute; inset:0; font-size:10px; color:#0a0d12; mix-blend-mode:screen; text-align:center; line-height:14px}
-  /* Mobile joystick */
-  .joystick{position:absolute; left:14px; bottom:14px; width:120px; height:120px; border-radius:50%; background:#0e132080; border:1px solid #2a344d; display:none}
-  .stick{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:56px; height:56px; border-radius:50%; background:#1b2134; border:2px solid #2a344d}
-  .action-btn{position:absolute; right:18px; bottom:22px; width:72px; height:72px; border-radius:50%; display:none; background:#1b2134; border:2px solid #2a344d; font-weight:800}
-  /* Responsive */
-  @media (max-width: 980px){
-    .app{grid-template-columns:1fr; grid-template-rows:56px 1fr 280px 120px; grid-template-areas:
-      "topbar" "main" "left" "hud"; gap:8px}
+  .bar-label{position:absolute;inset:0;font-size:10px;color:#0a0d12;mix-blend-mode:screen;text-align:center;line-height:14px}
+  .joystick{position:absolute;left:14px;bottom:14px;width:120px;height:120px;border-radius:50%;background:#0e132080;border:1px solid #2a344d;display:none}
+  .stick{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:#1b2134;border:2px solid #2a344d}
+  .action-btn{position:absolute;right:18px;bottom:22px;width:72px;height:72px;border-radius:50%;display:none;background:#1b2134;border:2px solid #2a344d;font-weight:800}
+  @media (max-width:980px){
+    .app{grid-template-columns:1fr;grid-template-rows:56px 1fr 280px 120px;grid-template-areas:"topbar" "main" "left" "hud";gap:8px}
     .right{display:none}
     .joystick,.action-btn{display:block}
   }
-  @media (max-width: 440px){
-    .app{padding:8px}
-  }
-  .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:#0f1422; border:1px solid #2a344d; padding:2px 6px; border-radius:6px}
+  .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0f1422;border:1px solid #2a344d;padding:2px 6px;border-radius:6px}
+  .badge{font-size:11px;border:1px solid #2a344d;border-radius:999px;padding:2px 8px;background:#11172a}
 </style>
 </head>
 <body>
   <div class="app">
     <div class="card topbar">
-      <div class="brand"><div class="dot"></div> SURVIVE<span style="opacity:.6">/prototype</span></div>
+      <div class="brand"><div class="dot"></div> SURVIVE<span style="opacity:.6">/prototype v2</span> <span id="dayBadge" class="badge" style="margin-left:8px">Den 1 • 08:00</span></div>
       <div class="top-actions">
         <button id="btnInv">🎒 Inventář (I)</button>
         <button id="btnCraft">🛠️ Craft (C)</button>
         <button id="btnBuild">🏗️ Stavby (B)</button>
         <button id="btnMap">🗺️ Mini (M)</button>
+        <button id="btnSave">💾 Uložit</button>
+        <button id="btnLoad">📂 Načíst</button>
+        <button id="btnReset">🗑️ Reset</button>
       </div>
     </div>
 
@@ -137,9 +108,7 @@
       <div class="game-wrap">
         <div class="notify" id="notify" hidden>🌧️ Blíží se bouře – najdi úkryt!</div>
         <canvas id="game"></canvas>
-        <div class="minimap" id="miniWrap">
-          <canvas id="mini"></canvas>
-        </div>
+        <div class="minimap" id="miniWrap"><canvas id="mini"></canvas></div>
         <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>
         <button class="action-btn" id="actBtn">E</button>
       </div>
@@ -148,7 +117,7 @@
     <div class="card right">
       <div class="panel">
         <div class="section-title">📋 Log / Události</div>
-        <div id="log" style="height:320px; overflow:auto; font-size:13px; line-height:1.4"></div>
+        <div id="log" style="height:320px;overflow:auto;font-size:13px;line-height:1.4"></div>
       </div>
     </div>
 
@@ -161,7 +130,7 @@
         <div class="bar violet"><i id="barPsyche"></i><div class="bar-label">Psychika</div></div>
         <div class="bar"><i id="barTemp"></i><div class="bar-label">Teplota</div></div>
       </div>
-      <div style="margin-left:auto; font-size:12px; color:var(--muted)">
+      <div style="margin-left:auto;font-size:12px;color:var(--muted)">
         Ovládání: <span class="kbd">WASD / ↑↓←→</span> pohyb · <span class="kbd">E</span> akce ·
         <span class="kbd">I</span> inventář · <span class="kbd">C</span> craft · <span class="kbd">B</span> stavby · <span class="kbd">M</span> mini
       </div>
@@ -169,33 +138,52 @@
   </div>
 
 <script>
-/* --- Helpers --- */
-const $ = sel => document.querySelector(sel);
-const log = (t)=>{ const el=$("#log"); const p=document.createElement("div"); p.textContent=`${new Date().toLocaleTimeString()} — ${t}`; el.prepend(p); }
+/* ========== Helpers & UI ========== */
+const $ = s => document.querySelector(s);
+const log = (t)=>{ const el=$("#log"); const p=document.createElement("div"); p.textContent=`${new Date().toLocaleTimeString()} — ${t}`; el.prepend(p); };
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
-/* --- UI State --- */
-const panels = { inv:$("#panelInv"), craft:$("#panelCraft"), build:$("#panelBuild") };
-const togglePanel=(name)=>{
-  Object.values(panels).forEach(p=>p.hidden=true);
-  if(name) panels[name].hidden=false;
-};
+const panels={inv:$("#panelInv"),craft:$("#panelCraft"),build:$("#panelBuild")};
+const togglePanel=(name)=>{ Object.values(panels).forEach(p=>p.hidden=true); if(name) panels[name].hidden=false; };
 $("#btnInv").onclick=()=>togglePanel("inv");
 $("#btnCraft").onclick=()=>togglePanel("craft");
 $("#btnBuild").onclick=()=>togglePanel("build");
 $("#btnMap").onclick=()=> miniWrap.hidden = !miniWrap.hidden;
 
-/* --- Inventory / Craft / Build data --- */
-const INV_SIZE = 15; // 3 řady po 5
-const inventory = Array.from({length:INV_SIZE}, (_,i)=> i<4 ? {icon:["🪵","🪨","🍖","🧵"][i], qty:Math.floor(Math.random()*6)+2} : null);
-const hotbar = Array.from({length:5},()=>null);
-const recipes = [
-  {name:"Táborák", need:{ "🪵":3, "🪨":1 }, gives:{icon:"🔥", qty:1}},
-  {name:"Kámen nůž", need:{ "🪨":2, "🧵":1 }, gives:{icon:"🔪", qty:1}},
-  {name:"Luk", need:{ "🪵":2, "🧵":2 }, gives:{icon:"🏹", qty:1}},
-  {name:"Lektvar (psyche+)", need:{ "🍖":1, "🧵":1 }, gives:{icon:"🧪", qty:1}},
+/* ========== Audio (bez souborů) ========== */
+const AudioSys = (()=> {
+  const ctx = new (window.AudioContext||window.webkitAudioContext)();
+  let lastStep=0;
+  const ping = (f=440, t=0.06, g=0.2, type="sine")=>{
+    const o=ctx.createOscillator(), gain=ctx.createGain();
+    o.type=type; o.frequency.value=f; gain.gain.value=g;
+    o.connect(gain).connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime+t);
+  };
+  return {
+    step: ()=>{ // lehký krok, rate limit
+      const now=performance.now();
+      if(now-lastStep>170){ ping(220,0.03,0.05,"triangle"); lastStep=now; }
+    },
+    pickup: ()=> ping(880,0.07,0.15,"sine"),
+    craft:  ()=> { ping(520,0.04,0.12,"triangle"); setTimeout(()=>ping(740,0.05,0.08,"triangle"),60); },
+    build:  ()=> ping(300,0.1,0.2,"square"),
+    hit:    ()=> ping(120,0.12,0.25,"sawtooth"),
+    warn:   ()=> ping(600,0.2,0.12,"sine")
+  }
+})();
+
+/* ========== Inventory / Craft / Build ========== */
+const INV_SIZE=15;
+let inventory = Array.from({length:INV_SIZE},(_,i)=> i<4 ? {icon:["🪵","🪨","🍖","🧵"][i], qty:Math.floor(Math.random()*6)+2}:null);
+let hotbar = Array.from({length:5},()=>null);
+const recipes=[
+  {name:"Táborák", need:{"🪵":3,"🪨":1}, gives:{icon:"🔥",qty:1}},
+  {name:"Kámen nůž", need:{"🪨":2,"🧵":1}, gives:{icon:"🔪",qty:1}},
+  {name:"Luk", need:{"🪵":2,"🧵":2}, gives:{icon:"🏹",qty:1}},
+  {name:"Lektvar (psyche+)", need:{"🍖":1,"🧵":1}, gives:{icon:"🧪",qty:1}},
 ];
-const buildings = [
+const buildings=[
   {name:"Přístřešek", icon:"⛺", need:{"🪵":6,"🧵":2}, size:48},
   {name:"Ohniště", icon:"🔥", need:{"🪵":3,"🪨":2}, size:32},
   {name:"Skladiště", icon:"📦", need:{"🪵":8,"🪨":4}, size:56},
@@ -217,45 +205,28 @@ function renderInventory(){
     hb.appendChild(d);
   });
 }
-function canCraft(need){
-  const counts={};
-  inventory.forEach(it=>{ if(it){ counts[it.icon]=(counts[it.icon]||0)+it.qty; } });
-  return Object.entries(need).every(([icon,qty])=> (counts[icon]||0)>=qty );
-}
+function canCraft(need){ const counts={}; inventory.forEach(it=>{ if(it){ counts[it.icon]=(counts[it.icon]||0)+it.qty; } }); return Object.entries(need).every(([icon,qty])=>(counts[icon]||0)>=qty); }
 function consume(need){
   for(const [icon,qty] of Object.entries(need)){
     let left=qty;
     for(let i=0;i<inventory.length && left>0;i++){
-      const it=inventory[i];
-      if(it && it.icon===icon){
-        const use=Math.min(it.qty,left);
-        it.qty-=use; left-=use;
-        if(it.qty<=0) inventory[i]=null;
-      }
+      const it=inventory[i]; if(it && it.icon===icon){ const use=Math.min(it.qty,left); it.qty-=use; left-=use; if(it.qty<=0) inventory[i]=null; }
     }
   }
 }
 function addItem(item){
-  // stack to same icon
-  for(let i=0;i<inventory.length;i++){
-    const it=inventory[i];
-    if(it && it.icon===item.icon){ it.qty+=item.qty; return true; }
-  }
-  // empty slot
-  for(let i=0;i<inventory.length;i++){
-    if(!inventory[i]){ inventory[i]={icon:item.icon, qty:item.qty}; return true; }
-  }
-  log("Inventář plný!");
-  return false;
+  for(let i=0;i<inventory.length;i++){ const it=inventory[i]; if(it && it.icon===item.icon){ it.qty+=item.qty; return true; } }
+  for(let i=0;i<inventory.length;i++){ if(!inventory[i]){ inventory[i]={icon:item.icon,qty:item.qty}; return true; } }
+  log("Inventář plný!"); return false;
 }
 function renderCraft(){
   const list=$("#craftList"); list.innerHTML="";
-  recipes.forEach((r,idx)=>{
+  recipes.forEach(r=>{
     const li=document.createElement("div"); li.className="list-item";
     const ok=canCraft(r.need);
-    li.innerHTML=`<div>${r.name} ${ok? "✅":"⛔" }<div class="muted">${Object.entries(r.need).map(([k,v])=>`${k}×${v}`).join(" · ")}</div></div>`;
+    li.innerHTML=`<div>${r.name} ${ok?"✅":"⛔"}<div class="muted">${Object.entries(r.need).map(([k,v])=>`${k}×${v}`).join(" · ")}</div></div>`;
     const b=document.createElement("button"); b.textContent="Vyrobit";
-    b.disabled=!ok; b.onclick=()=>{ consume(r.need); addItem(r.gives); renderInventory(); renderCraft(); log(`Vyrobeno: ${r.gives.icon} (${r.name})`); };
+    b.disabled=!ok; b.onclick=()=>{ consume(r.need); addItem(r.gives); renderInventory(); renderCraft(); log(`Vyrobeno: ${r.gives.icon} (${r.name})`); AudioSys.craft(); };
     li.appendChild(b); list.appendChild(li);
   });
 }
@@ -286,10 +257,8 @@ document.addEventListener("drop",(e)=>{
   const t=e.target.closest(".slot"); if(!t || !dragData) return;
   const toHB = t.dataset.hb!==undefined ? Number(t.dataset.hb):null;
   const toInv = t.dataset.index!==undefined ? Number(t.dataset.index):null;
-
   const get = (hb,inv)=> hb!=null ? hotbar[hb] : inventory[inv];
   const set = (hb,inv,val)=> { if(hb!=null) hotbar[hb]=val; else inventory[inv]=val; };
-
   const a = get(dragData.fromHB, dragData.fromInv);
   const b = get(toHB,toInv);
   set(dragData.fromHB, dragData.fromInv, b);
@@ -297,91 +266,133 @@ document.addEventListener("drop",(e)=>{
   renderInventory();
 });
 
-/* --- Game Core --- */
-const game = $("#game"); const ctx = game.getContext("2d");
-const mini = $("#mini"); const mtx = mini.getContext("2d");
+/* ========== Game Core ========== */
+const game=$("#game"), ctx=game.getContext("2d");
+const mini=$("#mini"), mtx=mini.getContext("2d");
 function resize(){
   const rect=game.parentElement.getBoundingClientRect();
-  game.width = Math.floor(rect.width * devicePixelRatio);
-  game.height= Math.floor(rect.height* devicePixelRatio);
+  game.width=Math.floor(rect.width*devicePixelRatio);
+  game.height=Math.floor(rect.height*devicePixelRatio);
   ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-  mini.width = Math.floor($("#miniWrap").clientWidth * devicePixelRatio);
-  mini.height= Math.floor($("#miniWrap").clientHeight* devicePixelRatio);
+  mini.width=Math.floor($("#miniWrap").clientWidth*devicePixelRatio);
+  mini.height=Math.floor($("#miniWrap").clientHeight*devicePixelRatio);
   mtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
 }
-addEventListener("resize", resize); resize();
+addEventListener("resize",resize); resize();
 
-const world={ w: 2000, h:1400,
-  resources:[], buildings:[], npcs:[]
-};
-for(let i=0;i<120;i++){
-  world.resources.push({
-    x: Math.random()*world.w, y: Math.random()*world.h,
-    type: Math.random()<.5? "tree":"rock"
-  });
+/* World + entities */
+let world={ w:2200, h:1500, resources:[], buildings:[], animals:[] };
+for(let i=0;i<140;i++){
+  world.resources.push({x:Math.random()*world.w,y:Math.random()*world.h,type:Math.random()<.55?"tree":"rock"});
 }
-const player={ x: world.w/2, y: world.h/2, r:14, spd:140, hp:100, hunger:70, thirst:70, energy:80, psyche:70, temp:50 };
+const player={ x:world.w/2, y:world.h/2, r:14, spd:150, hp:100, hunger:70, thirst:70, energy:80, psyche:70, temp:50 };
+/* Animals: type wolf (hostile) / deer (flee) */
+function spawnAnimals(nWolf=8,nDeer=12){
+  for(let i=0;i<nWolf;i++) world.animals.push({type:"wolf",x:Math.random()*world.w,y:Math.random()*world.h,spd:120,dir:Math.random()*Math.PI*2,aggro:false,hp:30});
+  for(let i=0;i<nDeer;i++) world.animals.push({type:"deer",x:Math.random()*world.w,y:Math.random()*world.h,spd:130,dir:Math.random()*Math.PI*2,hp:20});
+}
+spawnAnimals();
 
+/* Day/Night */
+const DAY_MS = 6*60*1000; // 6 minut jeden den
+let worldTime = Math.random()*DAY_MS; // start někde přes den
+function isNight(){ const t=worldTime/DAY_MS; return (t>0.75 || t<0.25); } // noc cca 50 %
+
+/* Input */
 const keys={}; addEventListener("keydown",e=>{
   keys[e.key.toLowerCase()]=true;
-  if(e.key==="i"||e.key==="I"){ togglePanel(panels.inv.hidden?"inv":null); }
-  if(e.key==="c"||e.key==="C"){ togglePanel(panels.craft.hidden?"craft":null); }
+  if(e.key==="i"||e.key==="I") togglePanel(panels.inv.hidden?"inv":null);
+  if(e.key==="c"||e.key==="C") togglePanel(panels.craft.hidden?"craft":null);
   if(e.key==="b"||e.key==="B"){ if(buildMode.active){ buildMode.active=false; } else togglePanel(panels.build.hidden?"build":null); }
-  if(e.key==="m"||e.key==="M"){ miniWrap.hidden=!miniWrap.hidden; }
-  if(e.key==="e"||e.key==="E"){ interact(); }
+  if(e.key==="m"||e.key==="M") miniWrap.hidden=!miniWrap.hidden;
+  if(e.key==="e"||e.key==="E") interact();
 });
 addEventListener("keyup",e=>{ keys[e.key.toLowerCase()]=false; });
 
 /* Build mode */
-const buildMode={ active:false, blueprint:null };
-
+const buildMode={active:false,blueprint:null};
 function interact(){
-  // nasbírej blízký zdroj
-  let got=false;
+  // loot resource
   for(const r of world.resources){
     const dx=r.x-player.x, dy=r.y-player.y;
     if(dx*dx+dy*dy < 36*36){
-      if(r.type==="tree"){ addItem({icon:"🪵", qty:1}); log("Sebráno: 🪵 dřevo"); }
-      else{ addItem({icon:"🪨", qty:1}); log("Sebráno: 🪨 kámen"); }
-      // malá šance zmizet
+      if(r.type==="tree"){ addItem({icon:"🪵",qty:1}); }
+      else{ addItem({icon:"🪨",qty:1}); }
       if(Math.random()<.3){ r.x=-9999; r.y=-9999; }
-      renderInventory(); renderCraft(); got=true; break;
+      renderInventory(); renderCraft(); log("Sebrány suroviny poblíž."); AudioSys.pickup();
+      return;
     }
   }
-  if(!got) log("Není nic k interakci poblíž.");
+  log("Není nic k interakci poblíž.");
 }
-
 function placeBuilding(px,py){
-  const b = buildings[buildMode.blueprint];
-  // check resources
+  const b=buildings[buildMode.blueprint];
   if(!canCraft(b.need)){ log("Nemáš suroviny na stavbu."); return; }
   consume(b.need);
-  world.buildings.push({x:px, y:py, size:b.size, icon:b.icon, name:b.name});
+  world.buildings.push({x:px,y:py,size:b.size,icon:b.icon,name:b.name});
   renderInventory(); renderCraft();
-  log(`Postaveno: ${b.name}`);
+  log(`Postaveno: ${b.name}`); AudioSys.build();
 }
-
 game.addEventListener("click",(e)=>{
   const rect=game.getBoundingClientRect();
-  const gx = (e.clientX - rect.left) * (game.width/rect.width);
-  const gy = (e.clientY - rect.top)  * (game.height/rect.height);
-  // transform to world coords (camera offset)
+  const gx=(e.clientX-rect.left)*(game.width/rect.width);
+  const gy=(e.clientY-rect.top)*(game.height/rect.height);
   const cx = player.x - game.width/devicePixelRatio/2;
   const cy = player.y - game.height/devicePixelRatio/2;
   const wx = gx/devicePixelRatio + cx;
   const wy = gy/devicePixelRatio + cy;
-  if(buildMode.active && buildMode.blueprint!=null){
-    placeBuilding(wx,wy);
-  }
+  if(buildMode.active && buildMode.blueprint!=null) placeBuilding(wx,wy);
 });
 
 /* Camera */
-function cam(){ return { x: player.x - game.width/devicePixelRatio/2, y: player.y - game.height/devicePixelRatio/2 }; }
+function cam(){ return { x:player.x - game.width/devicePixelRatio/2, y:player.y - game.height/devicePixelRatio/2 }; }
+
+/* Animals AI */
+function aiAnimals(dt){
+  for(const a of world.animals){
+    const dx=player.x-a.x, dy=player.y-a.y;
+    const dist=Math.hypot(dx,dy);
+    const nightAggro = isNight() && a.type==="wolf";
+    // behavior
+    if(a.type==="wolf"){
+      if(dist<220 || nightAggro){ a.aggro=true; }
+      if(a.aggro){
+        a.dir=Math.atan2(dy,dx);
+        a.x+=Math.cos(a.dir)*a.spd*dt;
+        a.y+=Math.sin(a.dir)*a.spd*dt;
+        // damage on contact
+        if(dist<player.r+10){
+          player.hp = clamp(player.hp-25*dt,0,100);
+          AudioSys.hit();
+          if(player.hp<=0) { log("Zemřel jsi! (F5 pro reload)"); }
+        }
+      }else{
+        // wander
+        a.dir += (Math.random()-.5)*1.2*dt;
+        a.x+=Math.cos(a.dir)*a.spd*0.4*dt;
+        a.y+=Math.sin(a.dir)*a.spd*0.4*dt;
+      }
+    }else if(a.type==="deer"){
+      if(dist<180){ // flee
+        a.dir=Math.atan2(a.y-player.y, a.x-player.x);
+        a.x+=Math.cos(a.dir)*a.spd*dt;
+        a.y+=Math.sin(a.dir)*a.spd*dt;
+      }else{
+        a.dir += (Math.random()-.5)*1.2*dt;
+        a.x+=Math.cos(a.dir)*a.spd*0.35*dt;
+        a.y+=Math.sin(a.dir)*a.spd*0.35*dt;
+      }
+    }
+    // bounds
+    a.x=clamp(a.x,10,world.w-10); a.y=clamp(a.y,10,world.h-10);
+  }
+}
 
 /* Loop */
 let last=performance.now();
 function tick(now){
   const dt=(now-last)/1000; last=now;
+  worldTime = (worldTime + dt*1000) % DAY_MS;
 
   // movement
   let vx=0, vy=0;
@@ -389,18 +400,22 @@ function tick(now){
   if(keys["s"]||keys["arrowdown"]) vy+=1;
   if(keys["a"]||keys["arrowleft"]) vx-=1;
   if(keys["d"]||keys["arrowright"]) vx+=1;
-  // mobile joystick add
   vx += joy.dx; vy += joy.dy;
-  const len=Math.hypot(vx,vy); if(len>0){ vx/=len; vy/=len; }
+  const len=Math.hypot(vx,vy); if(len>0){ vx/=len; vy/=len; AudioSys.step(); }
   player.x = clamp(player.x + vx*player.spd*dt, 0, world.w);
   player.y = clamp(player.y + vy*player.spd*dt, 0, world.h);
 
-  // vitals (placeholder simulace)
+  // vitals
   player.hunger = clamp(player.hunger - 0.8*dt, 0, 100);
   player.thirst = clamp(player.thirst - 1.0*dt, 0, 100);
   player.energy = clamp(player.energy - (len>0? 0.7:0.2)*dt, 0, 100);
-  player.psyche = clamp(player.psyche - 0.1*dt, 0, 100);
-  player.temp   = clamp( 50 + 6*Math.sin(now/30000), 0, 100);
+  player.psyche = clamp(player.psyche - (isNight()?0.25:0.1)*dt, 0, 100);
+  player.temp   = clamp( 50 + 16*Math.sin(worldTime/DAY_MS*Math.PI*2), 0, 100);
+
+  if(player.hunger<=0 || player.thirst<=0) player.hp = clamp(player.hp - 8*dt, 0, 100);
+
+  // animals AI
+  aiAnimals(dt);
 
   // bars
   $("#barHp").style.width = player.hp+"%";
@@ -410,19 +425,23 @@ function tick(now){
   $("#barPsyche").style.width = player.psyche+"%";
   $("#barTemp").style.width = player.temp+"%";
 
+  // top time badge
+  const t=worldTime/DAY_MS; const hours = Math.floor(t*24); const mins = Math.floor((t*24-hours)*60);
+  $("#dayBadge").textContent = `Den ${Math.floor((worldTime/DAY_MS))+1} • ${String(hours).padStart(2,"0")}:${String(mins).padStart(2,"0")}${isNight()?" (noc)":" (den)"}`;
+
   draw();
   requestAnimationFrame(tick);
 }
 
+/* Draw */
 function draw(){
   const {x:cx,y:cy}=cam();
-  // bg grid
   ctx.clearRect(0,0,game.width,game.height);
   ctx.save(); ctx.translate(-cx,-cy);
-  // ground pattern
-  ctx.fillStyle="#0e1420"; ctx.beginPath(); ctx.rect(0,0,world.w,world.h); ctx.fill();
 
-  // gentle grid
+  // ground
+  ctx.fillStyle="#0e1420"; ctx.fillRect(0,0,world.w,world.h);
+  // grid
   ctx.strokeStyle="#162033"; ctx.lineWidth=1;
   for(let gx=0;gx<world.w;gx+=80){ ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,world.h); ctx.stroke(); }
   for(let gy=0;gy<world.h;gy+=80){ ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(world.w,gy); ctx.stroke(); }
@@ -440,23 +459,37 @@ function draw(){
 
   // buildings
   for(const b of world.buildings){
-    ctx.fillStyle="#2c344e"; ctx.beginPath(); ctx.roundRect(b.x-b.size/2, b.y-b.size/2, b.size, b.size, 10); ctx.fill();
+    ctx.fillStyle="#2c344e"; roundRect(ctx, b.x-b.size/2, b.y-b.size/2, b.size, b.size, 10); ctx.fill();
     ctx.fillStyle="#c7d2ff"; ctx.font="16px sans-serif"; ctx.fillText(b.icon, b.x-8, b.y+6);
   }
 
-  // build ghost
-  if(buildMode.active && buildMode.blueprint!=null){
-    const b=buildings[buildMode.blueprint];
-    // ghost at player forward
-    ctx.save();
-    ctx.globalAlpha=0.35; ctx.strokeStyle="#59ffa9"; ctx.lineWidth=2;
-    ctx.strokeRect(player.x-b.size/2, player.y-b.size/2, b.size, b.size);
-    ctx.restore();
+  // animals
+  for(const a of world.animals){
+    if(a.type==="wolf"){ ctx.fillStyle="#c64b4b"; }
+    else{ ctx.fillStyle="#c6d6a7"; }
+    ctx.beginPath(); ctx.arc(a.x,a.y,8,0,Math.PI*2); ctx.fill();
   }
 
   // player
   ctx.fillStyle="#59ffa9"; ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fill();
   ctx.strokeStyle="#1f3b33"; ctx.lineWidth=2; ctx.stroke();
+
+  // build ghost
+  if(buildMode.active && buildMode.blueprint!=null){
+    const b=buildings[buildMode.blueprint];
+    ctx.save(); ctx.globalAlpha=0.35; ctx.strokeStyle="#59ffa9"; ctx.lineWidth=2;
+    ctx.strokeRect(player.x-b.size/2, player.y-b.size/2, b.size, b.size);
+    ctx.restore();
+  }
+
+  // night overlay (s temnější nocí)
+  const night = isNight()? 0.55 : 0.0;
+  if(night>0){
+    const grd = ctx.createRadialGradient(player.x,player.y,40, player.x,player.y,260);
+    grd.addColorStop(0, `rgba(0,0,0,${night*0.1})`);
+    grd.addColorStop(1, `rgba(0,0,0,${night})`);
+    ctx.fillStyle=grd; ctx.fillRect(cx,cy,game.width/devicePixelRatio,game.height/devicePixelRatio);
+  }
 
   ctx.restore();
 
@@ -465,38 +498,23 @@ function draw(){
   const sx= mini.width/world.w, sy= mini.height/world.h;
   mtx.fillStyle="#0e1320"; mtx.fillRect(0,0,mini.width,mini.height);
   mtx.fillStyle="#2a344d"; for(let i=0;i<6;i++){ mtx.fillRect(i*mini.width/6,0,1,mini.height); }
-  for(const r of world.resources){
-    if(r.x<0) continue;
-    mtx.fillStyle = r.type==="tree" ? "#2de3a0" : "#8aa3ff";
-    mtx.fillRect(r.x*sx, r.y*sy, 2,2);
-  }
-  for(const b of world.buildings){
-    mtx.fillStyle="#ffd166"; mtx.fillRect(b.x*sx-2, b.y*sy-2, 4,4);
-  }
+  for(const r of world.resources){ if(r.x<0) continue; mtx.fillStyle = r.type==="tree" ? "#2de3a0" : "#8aa3ff"; mtx.fillRect(r.x*sx, r.y*sy, 2,2); }
+  for(const b of world.buildings){ mtx.fillStyle="#ffd166"; mtx.fillRect(b.x*sx-2, b.y*sy-2, 4,4); }
+  for(const a of world.animals){ mtx.fillStyle = a.type==="wolf"?"#ff6b6b":"#c6d6a7"; mtx.fillRect(a.x*sx-1, a.y*sy-1, 2,2); }
   mtx.fillStyle="#59ffa9"; mtx.beginPath(); mtx.arc(player.x*sx, player.y*sy, 3,0,Math.PI*2); mtx.fill();
 }
 
-/* --- Notifications demo --- */
+/* Notifications demo */
 const notifyEl=$("#notify");
-setInterval(()=>{
-  notifyEl.hidden=false;
-  setTimeout(()=> notifyEl.hidden=true, 2200);
-}, 15000);
+setInterval(()=>{ notifyEl.hidden=false; AudioSys.warn(); setTimeout(()=> notifyEl.hidden=true, 2200); }, 18000);
 
-/* --- Mobile joystick --- */
+/* Mobile joystick */
 const joy={ active:false, dx:0, dy:0, base:$("#joystick"), stick:$("#stick") };
 function joyPos(e){
-  const r=joy.base.getBoundingClientRect();
-  const cx=r.left+r.width/2, cy=r.top+r.height/2;
-  let x,y;
-  if(e.touches && e.touches[0]){ x=e.touches[0].clientX; y=e.touches[0].clientY; }
-  else { x=e.clientX; y=e.clientY; }
-  let dx=x-cx, dy=y-cy;
-  const max = r.width*0.42;
-  const len=Math.hypot(dx,dy);
-  if(len>max){ dx=dx/len*max; dy=dy/len*max; }
-  joy.stick.style.transform=`translate(${dx}px,${dy}px)`;
-  joy.dx = dx/max; joy.dy = dy/max;
+  const r=joy.base.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
+  let x,y; if(e.touches&&e.touches[0]){ x=e.touches[0].clientX; y=e.touches[0].clientY; } else { x=e.clientX; y=e.clientY; }
+  let dx=x-cx, dy=y-cy; const max=r.width*0.42; const len=Math.hypot(dx,dy); if(len>max){ dx=dx/len*max; dy=dy/len*max; }
+  joy.stick.style.transform=`translate(${dx}px,${dy}px)`; joy.dx=dx/max; joy.dy=dy/max;
 }
 joy.base.addEventListener("touchstart",e=>{ joy.active=true; joyPos(e); });
 joy.base.addEventListener("touchmove", e=>{ if(joy.active) joyPos(e); });
@@ -504,31 +522,50 @@ joy.base.addEventListener("touchend",  ()=>{ joy.active=false; joy.dx=0; joy.dy=
 joy.base.addEventListener("mousedown",e=>{ joy.active=true; joyPos(e); });
 addEventListener("mousemove", e=>{ if(joy.active) joyPos(e); });
 addEventListener("mouseup", ()=>{ if(joy.active){ joy.active=false; joy.dx=0; joy.dy=0; joy.stick.style.transform="translate(-50%,-50%)"; } });
-
-/* Action button (mobile E) */
 $("#actBtn").addEventListener("click", interact);
+
+/* Save/Load/Reset (LocalStorage) */
+const SAVE_KEY="survive_v2_save";
+function serialize(){
+  return JSON.stringify({
+    worldTime, world, player, inventory, hotbar
+  });
+}
+function deserialize(json){
+  try{
+    const d=JSON.parse(json);
+    if(d.world && d.player){
+      worldTime=d.worldTime||0;
+      world=d.world; // jednoduché – vše v objektu
+      Object.assign(player,d.player);
+      inventory=d.inventory; hotbar=d.hotbar;
+      renderInventory(); renderCraft(); renderBuild();
+      log("Save načten."); return true;
+    }
+  }catch(e){ console.warn(e); }
+  return false;
+}
+$("#btnSave").onclick=()=>{ localStorage.setItem(SAVE_KEY, serialize()); log("Uloženo do LocalStorage."); };
+$("#btnLoad").onclick=()=>{ const data=localStorage.getItem(SAVE_KEY); if(data && deserialize(data)){} else log("Žádný save nenalezen."); };
+$("#btnReset").onclick=()=>{ localStorage.removeItem(SAVE_KEY); location.reload(); };
+addEventListener("beforeunload", ()=>{ localStorage.setItem(SAVE_KEY, serialize()); });
 
 /* Start */
 requestAnimationFrame(tick);
 
-/* Small polyfill (Canvas rounded rect older browsers) */
-if(!CanvasRenderingContext2D.prototype.roundRect){
-  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
-    const rr = typeof r==="number" ? {tl:r,tr:r,br:r,bl:r} : r;
-    this.beginPath();
-    this.moveTo(x+rr.tl,y);
-    this.lineTo(x+w-rr.tr,y);
-    this.quadraticCurveTo(x+w,y,x+w,y+rr.tr);
-    this.lineTo(x+w,y+h-rr.br);
-    this.quadraticCurveTo(x+w,y+h,x+w-rr.br,y+h);
-    this.lineTo(x+rr.bl,y+h);
-    this.quadraticCurveTo(x,y+h,x,y+h-rr.bl);
-    this.lineTo(x,y+rr.tl);
-    this.quadraticCurveTo(x,y,x+rr.tl,y);
-    this.closePath();
-    return this;
-  }
+/* Utils */
+function roundRect(ctx,x,y,w,h,r){ if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); return; }
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
 }
+
+/* Build panel binding after render */
+const buildList=$("#buildList");
+buildList.addEventListener("click",(e)=>{
+  const b=e.target.closest("button"); if(!b) return;
+  // handled in renderBuild -> onclick; left here for clarity
+});
 </script>
 </body>
 </html>
