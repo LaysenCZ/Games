@@ -1,571 +1,455 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="cs">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>Survival Web Prototype – v2 (AI, den/noc, zvuky, save)</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Živý svět hráčů – MVP</title>
 <style>
-  :root{
-    --bg:#0f1115; --panel:#151822; --panel2:#1b2030; --acc:#59ffa9; --text:#e9eef7; --muted:#93a1b3; --red:#ff6b6b;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0;background:linear-gradient(180deg,#0d1016,#0b0e13 60%,#0a0d12);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;overflow:hidden}
-  .app{display:grid;grid-template-columns:280px 1fr 260px;grid-template-rows:56px 1fr 120px;grid-template-areas:"topbar topbar topbar" "left main right" "hud hud hud";height:100%;gap:10px;padding:10px}
-  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid #22293a;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.35);overflow:hidden}
-  .topbar{grid-area:topbar;display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
-  .brand{display:flex;gap:10px;align-items:center;font-weight:700;letter-spacing:.5px}
-  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)}
-  .top-actions{display:flex;gap:8px;flex-wrap:wrap}
-  button,.btn{background:#20273a;color:var(--text);border:1px solid #2a344d;padding:8px 12px;border-radius:12px;font-weight:600;cursor:pointer;transition:.12s transform,.12s opacity}
-  button:hover{transform:translateY(-1px)} button:active{transform:translateY(0)}
-  .left{grid-area:left;padding:10px;display:flex;flex-direction:column;gap:10px}
-  .right{grid-area:right;padding:10px;display:flex;flex-direction:column;gap:10px}
-  .main{grid-area:main;position:relative}
-  .hud{grid-area:hud;display:flex;gap:10px;align-items:center;padding:10px}
-  .game-wrap{position:relative;height:100%}
-  canvas#game{width:100%;height:100%;display:block;background:radial-gradient(1200px 800px at 50% 35%, #0f1420, #0b0f18)}
-  .minimap{position:absolute;right:10px;top:10px;width:140px;height:100px;border-radius:12px;border:1px solid #2a344d;background:#10152388;backdrop-filter: blur(4px);padding:6px}
-  canvas#mini{width:100%;height:100%}
-  .notify{position:absolute;left:50%;transform:translateX(-50%);top:10px;background:#0f1422dd;border:1px solid #2a344d;padding:8px 14px;border-radius:12px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.35)}
-  .panel{padding:12px}
-  .section-title{font-weight:800;margin-bottom:8px;letter-spacing:.4px}
-  .muted{color:var(--muted);font-size:12px}
-  .grid{display:grid;gap:8px}
-  .inv-grid{grid-template-columns: repeat(5, 1fr)}
-  .slot{aspect-ratio:1/1;border:1px dashed #2f3a56;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#9fb3d1;background:#0f1320;position:relative;user-select:none}
-  .slot .qty{position:absolute;right:6px;bottom:4px;font-size:12px;color:#b6c5db}
-  .equip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .hotbar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-  .list{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow:auto}
-  .list-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border:1px solid #2a344d;border-radius:10px;background:#0f1320}
-  .ghost{opacity:.5;outline:2px dashed var(--acc)}
-  .bars{display:grid;grid-template-columns: repeat(6, 1fr);gap:8px;width:100%}
-  .bar{background:#0f1320;border:1px solid #2a344d;border-radius:999px;height:14px;overflow:hidden;position:relative}
-  .bar > i{position:absolute;inset:0;width:50%;background:linear-gradient(90deg, #2de3a0, #79ffc8)}
-  .bar.red> i{background:linear-gradient(90deg,#ff6b6b,#ffa8a8)}
-  .bar.blue> i{background:linear-gradient(90deg,#68a5ff,#a2c4ff)}
-  .bar.gold> i{background:linear-gradient(90deg,#ffd166,#ffe29a)}
-  .bar.violet> i{background:linear-gradient(90deg,#b388ff,#e1c8ff)}
-  .bar-label{position:absolute;inset:0;font-size:10px;color:#0a0d12;mix-blend-mode:screen;text-align:center;line-height:14px}
-  .joystick{position:absolute;left:14px;bottom:14px;width:120px;height:120px;border-radius:50%;background:#0e132080;border:1px solid #2a344d;display:none}
-  .stick{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;background:#1b2134;border:2px solid #2a344d}
-  .action-btn{position:absolute;right:18px;bottom:22px;width:72px;height:72px;border-radius:50%;display:none;background:#1b2134;border:2px solid #2a344d;font-weight:800}
-  @media (max-width:980px){
-    .app{grid-template-columns:1fr;grid-template-rows:56px 1fr 280px 120px;grid-template-areas:"topbar" "main" "left" "hud";gap:8px}
-    .right{display:none}
-    .joystick,.action-btn{display:block}
-  }
-  .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#0f1422;border:1px solid #2a344d;padding:2px 6px;border-radius:6px}
-  .badge{font-size:11px;border:1px solid #2a344d;border-radius:999px;padding:2px 8px;background:#11172a}
+  html,body{margin:0;padding:0;background:#0e0f11;color:#e7e7ea;font-family:Inter,system-ui,Arial}
+  #game{display:block;width:100vw;height:70vh;background:#1a1c20}
+  .hud{position:fixed;left:16px;right:16px;bottom:16px;display:grid;gap:8px}
+  .bars{display:grid;grid-template-columns:1fr;gap:6px}
+  .bar{height:12px;background:#2a2d33;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 1px #0007}
+  .fill{height:100%;background:linear-gradient(90deg,#36c,#6cf);width:50%;transition:width .2s}
+  .bar.hunger .fill{background:linear-gradient(90deg,#da3a3a,#ff9f43)}
+  .bar.thirst .fill{background:linear-gradient(90deg,#2a9dff,#7ad4ff)}
+  .bar.energy .fill{background:linear-gradient(90deg,#9b59b6,#c39bd3)}
+  .bar.temp .fill{background:linear-gradient(90deg,#3bc26b,#eccc68)}
+  .bar.hp .fill{background:linear-gradient(90deg,#27ae60,#2ecc71)}
+  .row{display:flex;align-items:center;gap:10px;font-size:12px;opacity:.9}
+  .pill{padding:4px 8px;border-radius:999px;background:#22252b;border:1px solid #2e323a}
+  .phase{font-weight:600}
+  .panel{position:fixed;top:16px;left:16px;padding:12px 14px;border-radius:12px;background:#1b1e24;border:1px solid #2b3038;box-shadow:0 10px 30px #0009}
+  .panel h3{margin:0 0 8px 0;font-size:14px;opacity:.9}
+  .list{font-size:13px;line-height:1.5}
+  .kbd{display:inline-block;padding:2px 6px;border:1px solid #3a3f49;border-bottom-width:2px;border-radius:6px;background:#14161a;font-size:12px}
+  .craft{position:fixed;top:16px;right:16px;width:300px;max-width:90vw;padding:12px;border-radius:12px;background:#15171c;border:1px solid #2b3038;box-shadow:0 10px 30px #0009;display:none}
+  .craft.open{display:block}
+  .craft h3{margin:0 0 8px 0;font-size:14px}
+  .craft .item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:10px;background:#1b1e24;margin-bottom:8px;border:1px solid #2b3038}
+  .craft .item small{opacity:.8}
+  .inv{position:fixed;right:16px;bottom:16px;padding:10px 12px;border-radius:12px;background:#1b1e24;border:1px solid #2b3038}
+  .map{position:fixed;left:50%;transform:translateX(-50%);top:16px;padding:8px 10px;border-radius:10px;background:#111318;border:1px solid #2b3038;font-size:12px;display:none}
+  .map.open{display:block}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:90px;background:#0f1116;border:1px solid #303646;padding:8px 12px;border-radius:10px;font-size:13px;opacity:.95}
+  .dead{position:fixed;inset:0;background:#000b;color:#fff;display:none;place-items:center;text-align:center}
+  .dead.open{display:grid}
+  a{color:#8ac7ff;text-decoration:none}
 </style>
 </head>
 <body>
-  <div class="app">
-    <div class="card topbar">
-      <div class="brand"><div class="dot"></div> SURVIVE<span style="opacity:.6">/prototype v2</span> <span id="dayBadge" class="badge" style="margin-left:8px">Den 1 • 08:00</span></div>
-      <div class="top-actions">
-        <button id="btnInv">🎒 Inventář (I)</button>
-        <button id="btnCraft">🛠️ Craft (C)</button>
-        <button id="btnBuild">🏗️ Stavby (B)</button>
-        <button id="btnMap">🗺️ Mini (M)</button>
-        <button id="btnSave">💾 Uložit</button>
-        <button id="btnLoad">📂 Načíst</button>
-        <button id="btnReset">🗑️ Reset</button>
-      </div>
-    </div>
+<canvas id="game"></canvas>
 
-    <div class="card left">
-      <!-- INVENTORY -->
-      <div class="panel" id="panelInv" hidden>
-        <div class="section-title">🎒 Inventář</div>
-        <div class="muted">Přetahuj předměty. Hotbar = rychlý přístup.</div>
-        <div class="equip">
-          <div class="slot" data-slot="weapon">🔪<span class="qty"></span></div>
-          <div class="slot" data-slot="armor">🛡️<span class="qty"></span></div>
-          <div class="slot" data-slot="tool">⛏️<span class="qty"></span></div>
-        </div>
-        <div class="grid inv-grid" id="invGrid"></div>
-        <div class="hotbar" id="hotbar"></div>
-      </div>
-
-      <!-- CRAFT -->
-      <div class="panel" id="panelCraft" hidden>
-        <div class="section-title">🧰 Výroba</div>
-        <div class="muted">Vyrob pokud máš suroviny.</div>
-        <div class="list" id="craftList"></div>
-      </div>
-
-      <!-- BUILD -->
-      <div class="panel" id="panelBuild" hidden>
-        <div class="section-title">🏕️ Stavby</div>
-        <div class="muted">Zvol stavbu a umisti ji na mapu (B = režim).</div>
-        <div class="list" id="buildList"></div>
-      </div>
-    </div>
-
-    <div class="card main">
-      <div class="game-wrap">
-        <div class="notify" id="notify" hidden>🌧️ Blíží se bouře – najdi úkryt!</div>
-        <canvas id="game"></canvas>
-        <div class="minimap" id="miniWrap"><canvas id="mini"></canvas></div>
-        <div class="joystick" id="joystick"><div class="stick" id="stick"></div></div>
-        <button class="action-btn" id="actBtn">E</button>
-      </div>
-    </div>
-
-    <div class="card right">
-      <div class="panel">
-        <div class="section-title">📋 Log / Události</div>
-        <div id="log" style="height:320px;overflow:auto;font-size:13px;line-height:1.4"></div>
-      </div>
-    </div>
-
-    <div class="card hud">
-      <div class="bars">
-        <div class="bar red"><i id="barHp"></i><div class="bar-label">HP</div></div>
-        <div class="bar"><i id="barHunger"></i><div class="bar-label">Hlad</div></div>
-        <div class="bar blue"><i id="barThirst"></i><div class="bar-label">Žízeň</div></div>
-        <div class="bar gold"><i id="barEnergy"></i><div class="bar-label">Energie</div></div>
-        <div class="bar violet"><i id="barPsyche"></i><div class="bar-label">Psychika</div></div>
-        <div class="bar"><i id="barTemp"></i><div class="bar-label">Teplota</div></div>
-      </div>
-      <div style="margin-left:auto;font-size:12px;color:var(--muted)">
-        Ovládání: <span class="kbd">WASD / ↑↓←→</span> pohyb · <span class="kbd">E</span> akce ·
-        <span class="kbd">I</span> inventář · <span class="kbd">C</span> craft · <span class="kbd">B</span> stavby · <span class="kbd">M</span> mini
-      </div>
-    </div>
+<div class="panel">
+  <h3>Ovládání</h3>
+  <div class="list">
+    <div><span class="kbd">WASD</span> pohyb &nbsp; <span class="kbd">E</span> interakce &nbsp; <span class="kbd">C</span> crafting &nbsp; <span class="kbd">F</span> postavit &nbsp; <span class="kbd">R</span> spánek &nbsp; <span class="kbd">M</span> mapa</div>
   </div>
+</div>
+
+<div class="craft" id="craft">
+  <h3>Crafting</h3>
+  <div class="item" data-id="fire">
+    <div><b>Oheň</b><br><small>Topí, vaří, rychlá energie • 4× dřevo</small></div>
+    <button class="kbd craftBuild" data-id="fire">Vybrat</button>
+  </div>
+  <div class="item" data-id="shelter">
+    <div><b>Přístřešek</b><br><small>Bezpečný spánek • 12× dřevo</small></div>
+    <button class="kbd craftBuild" data-id="shelter">Vybrat</button>
+  </div>
+</div>
+
+<div class="map" id="map">Mini-mapa — šedé: les, modré: voda, žluté: louka</div>
+
+<div class="hud">
+  <div class="row">
+    <span class="pill phase" id="phase">Dítě</span>
+    <span class="pill" id="age">Čas: 00:00 / 1:45</span>
+    <span class="pill" id="pos">x0,y0</span>
+    <span class="pill" id="msg"></span>
+  </div>
+  <div class="bars">
+    <div class="bar hp"><div class="fill" id="hp"></div></div>
+    <div class="bar hunger"><div class="fill" id="hunger"></div></div>
+    <div class="bar thirst"><div class="fill" id="thirst"></div></div>
+    <div class="bar energy"><div class="fill" id="energy"></div></div>
+    <div class="bar temp"><div class="fill" id="temp"></div></div>
+  </div>
+</div>
+
+<div class="inv" id="inv">Dřevo: <b id="wood">0</b> • Bobule: <b id="berries">0</b></div>
+<div class="toast" id="toast" style="display:none"></div>
+
+<div class="dead" id="dead">
+  <div>
+    <h2 id="deadTitle">Zemřel jsi</h2>
+    <p id="deadReason">Příčina: hlad</p>
+    <p><button class="kbd" onclick="location.reload()">Hrát znovu</button></p>
+    <p><small>Tip: u ohně regeneruješ energii a teplotu rychleji.</small></p>
+  </div>
+</div>
 
 <script>
-/* ========== Helpers & UI ========== */
-const $ = s => document.querySelector(s);
-const log = (t)=>{ const el=$("#log"); const p=document.createElement("div"); p.textContent=`${new Date().toLocaleTimeString()} — ${t}`; el.prepend(p); };
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-
-const panels={inv:$("#panelInv"),craft:$("#panelCraft"),build:$("#panelBuild")};
-const togglePanel=(name)=>{ Object.values(panels).forEach(p=>p.hidden=true); if(name) panels[name].hidden=false; };
-$("#btnInv").onclick=()=>togglePanel("inv");
-$("#btnCraft").onclick=()=>togglePanel("craft");
-$("#btnBuild").onclick=()=>togglePanel("build");
-$("#btnMap").onclick=()=> miniWrap.hidden = !miniWrap.hidden;
-
-/* ========== Audio (bez souborů) ========== */
-const AudioSys = (()=> {
-  const ctx = new (window.AudioContext||window.webkitAudioContext)();
-  let lastStep=0;
-  const ping = (f=440, t=0.06, g=0.2, type="sine")=>{
-    const o=ctx.createOscillator(), gain=ctx.createGain();
-    o.type=type; o.frequency.value=f; gain.gain.value=g;
-    o.connect(gain).connect(ctx.destination);
-    o.start(); o.stop(ctx.currentTime+t);
+(function(){
+  // --- Config ---
+  const LIFE_SECS = 105 * 60; // 1h45m = 6300 s
+  const PHASES = [
+    {name:"Dítě", start:0, end:45*60, speed:1.2, dmg:0.5, carry:0.6, hungerMul:0.75, thirstMul:0.75},
+    {name:"Mladík", start:45*60, end:65*60, speed:1.0, dmg:1.0, carry:1.0, hungerMul:1.0, thirstMul:1.0},
+    {name:"Dospělý", start:65*60, end:80*60, speed:0.9, dmg:1.25, carry:1.2, hungerMul:1.0, thirstMul:1.0},
+    {name:"Stařec", start:80*60, end:105*60, speed:0.75, dmg:0.8, carry:0.6, hungerMul:1.15, thirstMul:1.15},
+  ];
+  const TICK = 1/60; // sec per frame approx
+  const WORLD = { w: 3000, h: 2000, tile: 50 };
+  const H = { hunger:100, thirst:100, energy:100, temp:50, hp:100 };
+  const RATES = {
+    hunger:-0.008, // per sec base
+    thirst:-0.012,
+    energyMove:-0.02,
+    energyRest:+0.35, // at fire/shelter
+    tempAmbient:-0.005, // drift to ambient
+    hpStarve:-0.25,
+    hpDehyd:-0.35,
+    hpColdHot:-0.15
   };
-  return {
-    step: ()=>{ // lehký krok, rate limit
-      const now=performance.now();
-      if(now-lastStep>170){ ping(220,0.03,0.05,"triangle"); lastStep=now; }
-    },
-    pickup: ()=> ping(880,0.07,0.15,"sine"),
-    craft:  ()=> { ping(520,0.04,0.12,"triangle"); setTimeout(()=>ping(740,0.05,0.08,"triangle"),60); },
-    build:  ()=> ping(300,0.1,0.2,"square"),
-    hit:    ()=> ping(120,0.12,0.25,"sawtooth"),
-    warn:   ()=> ping(600,0.2,0.12,"sine")
+  const AMBIENT = ()=> 45; // simple baseline
+  const FIRE_RADIUS = 120;
+  const SHELTER_RADIUS = 120;
+
+  // --- State ---
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  function resize(){ canvas.width = window.innerWidth; canvas.height = Math.round(window.innerHeight*0.7); }
+  window.addEventListener('resize', resize); resize();
+
+  const keys = new Set();
+  window.addEventListener('keydown', e=>{ keys.add(e.key.toLowerCase()); if(['c','m'].includes(e.key.toLowerCase())) e.preventDefault();});
+  window.addEventListener('keyup', e=> keys.delete(e.key.toLowerCase()));
+
+  let player = { x: 1500, y: 1200, vx:0, vy:0, speed:140, inv:{wood:0, berries:0}, ageSec:0, alive:true, selectedBuild:null, wisdom:0 };
+  let last = performance.now();
+
+  // --- Simple world: water strip + forests + meadows ---
+  const waterRects = [{x:200, y:600, w:2600, h:140}];
+  const trees = [];
+  const bushes = [];
+  const structures = []; // {type:'fire'|'shelter',x,y, fuel/time/decay}
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+  // place trees/bushes
+  for(let i=0;i<220;i++){
+    const cluster = (i%2===0);
+    const x = cluster? rnd(300,2700): rnd(100,2900);
+    const y = cluster? rnd(200,900): rnd(1000,1800);
+    trees.push({x,y, wood: Math.random()<0.15?0: Math.floor(rnd(2,6)), alive:true});
   }
-})();
+  for(let i=0;i<90;i++){
+    bushes.push({x:rnd(200,2800), y:rnd(200,1700), berries: Math.floor(rnd(1,4)), cooldown:0});
+  }
 
-/* ========== Inventory / Craft / Build ========== */
-const INV_SIZE=15;
-let inventory = Array.from({length:INV_SIZE},(_,i)=> i<4 ? {icon:["🪵","🪨","🍖","🧵"][i], qty:Math.floor(Math.random()*6)+2}:null);
-let hotbar = Array.from({length:5},()=>null);
-const recipes=[
-  {name:"Táborák", need:{"🪵":3,"🪨":1}, gives:{icon:"🔥",qty:1}},
-  {name:"Kámen nůž", need:{"🪨":2,"🧵":1}, gives:{icon:"🔪",qty:1}},
-  {name:"Luk", need:{"🪵":2,"🧵":2}, gives:{icon:"🏹",qty:1}},
-  {name:"Lektvar (psyche+)", need:{"🍖":1,"🧵":1}, gives:{icon:"🧪",qty:1}},
-];
-const buildings=[
-  {name:"Přístřešek", icon:"⛺", need:{"🪵":6,"🧵":2}, size:48},
-  {name:"Ohniště", icon:"🔥", need:{"🪵":3,"🪨":2}, size:32},
-  {name:"Skladiště", icon:"📦", need:{"🪵":8,"🪨":4}, size:56},
-];
+  // --- UI refs ---
+  const el = id=>document.getElementById(id);
+  const ui = {
+    hp: el('hp'), hunger: el('hunger'), thirst: el('thirst'),
+    energy: el('energy'), temp: el('temp'),
+    phase: el('phase'), age: el('age'), pos: el('pos'),
+    wood: el('wood'), berries: el('berries'),
+    craft: el('craft'), map: el('map'), toast: el('toast'),
+    dead: el('dead'), deadTitle: el('deadTitle'), deadReason: el('deadReason'),
+    msg: el('msg')
+  };
 
-function renderInventory(){
-  const grid=$("#invGrid"); grid.innerHTML="";
-  inventory.forEach((item,i)=>{
-    const d=document.createElement("div"); d.className="slot"; d.draggable=true; d.dataset.index=i;
-    d.textContent=item?item.icon:"";
-    const q=document.createElement("span"); q.className="qty"; q.textContent=item?item.qty:""; d.appendChild(q);
-    grid.appendChild(d);
+  // Crafting selections
+  document.querySelectorAll('.craftBuild').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      player.selectedBuild = btn.dataset.id;
+      showToast("Vybráno: " + (player.selectedBuild==='fire'?'Oheň (F)':'Přístřešek (F)'));
+    });
   });
-  const hb=$("#hotbar"); hb.innerHTML="";
-  hotbar.forEach((item,i)=>{
-    const d=document.createElement("div"); d.className="slot"; d.draggable=true; d.dataset.hb=i;
-    d.textContent=item?item.icon:"";
-    const q=document.createElement("span"); q.className="qty"; q.textContent=item?item.qty:""; d.appendChild(q);
-    hb.appendChild(d);
+
+  window.addEventListener('keydown', e=>{
+    const k = e.key.toLowerCase();
+    if(k==='c'){ ui.craft.classList.toggle('open'); }
+    if(k==='m'){ ui.map.classList.toggle('open'); }
+    if(k==='f'){ tryBuild(); }
+    if(k==='r'){ tryRest(); }
+    if(k==='e'){ tryInteract(); }
   });
-}
-function canCraft(need){ const counts={}; inventory.forEach(it=>{ if(it){ counts[it.icon]=(counts[it.icon]||0)+it.qty; } }); return Object.entries(need).every(([icon,qty])=>(counts[icon]||0)>=qty); }
-function consume(need){
-  for(const [icon,qty] of Object.entries(need)){
-    let left=qty;
-    for(let i=0;i<inventory.length && left>0;i++){
-      const it=inventory[i]; if(it && it.icon===icon){ const use=Math.min(it.qty,left); it.qty-=use; left-=use; if(it.qty<=0) inventory[i]=null; }
+
+  function showToast(t,ms=1400){
+    ui.toast.textContent=t;
+    ui.toast.style.display='block';
+    clearTimeout(showToast._t);
+    showToast._t=setTimeout(()=> ui.toast.style.display='none', ms);
+  }
+
+  function fmtTime(secs){
+    const m = Math.floor(secs/60), s = Math.floor(secs%60);
+    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  function getPhase(age){
+    return PHASES.find(p=> age>=p.start && age<p.end) || PHASES[PHASES.length-1];
+  }
+
+  function near(ax,ay,bx,by,dist){ const dx=ax-bx, dy=ay-by; return dx*dx+dy*dy <= dist*dist; }
+
+  function tryInteract(){
+    // water drink
+    for(const r of waterRects){
+      if(player.x>r.x-20 && player.x<r.x+r.w+20 && player.y>r.y-10 && player.y<r.y+r.h+10){
+        H.thirst = Math.min(100, H.thirst + 18);
+        showToast("Piješ vodu (+18 žízeň)");
+        return;
+      }
     }
-  }
-}
-function addItem(item){
-  for(let i=0;i<inventory.length;i++){ const it=inventory[i]; if(it && it.icon===item.icon){ it.qty+=item.qty; return true; } }
-  for(let i=0;i<inventory.length;i++){ if(!inventory[i]){ inventory[i]={icon:item.icon,qty:item.qty}; return true; } }
-  log("Inventář plný!"); return false;
-}
-function renderCraft(){
-  const list=$("#craftList"); list.innerHTML="";
-  recipes.forEach(r=>{
-    const li=document.createElement("div"); li.className="list-item";
-    const ok=canCraft(r.need);
-    li.innerHTML=`<div>${r.name} ${ok?"✅":"⛔"}<div class="muted">${Object.entries(r.need).map(([k,v])=>`${k}×${v}`).join(" · ")}</div></div>`;
-    const b=document.createElement("button"); b.textContent="Vyrobit";
-    b.disabled=!ok; b.onclick=()=>{ consume(r.need); addItem(r.gives); renderInventory(); renderCraft(); log(`Vyrobeno: ${r.gives.icon} (${r.name})`); AudioSys.craft(); };
-    li.appendChild(b); list.appendChild(li);
-  });
-}
-function renderBuild(){
-  const list=$("#buildList"); list.innerHTML="";
-  buildings.forEach((bld,idx)=>{
-    const ok=canCraft(bld.need);
-    const li=document.createElement("div"); li.className="list-item";
-    li.innerHTML=`<div>${bld.icon} ${bld.name} ${ok?"✅":"⛔"}<div class="muted">${Object.entries(bld.need).map(([k,v])=>`${k}×${v}`).join(" · ")}</div></div>`;
-    const b=document.createElement("button"); b.textContent="Zvolit";
-    b.disabled=!ok; b.onclick=()=>{ buildMode.active=true; buildMode.blueprint=idx; togglePanel(); log(`Stavba: ${bld.name} – klikni na mapu pro umístění (nebo B pro zrušení)`); };
-    li.appendChild(b); list.appendChild(li);
-  });
-}
-renderInventory(); renderCraft(); renderBuild();
-
-/* Drag & drop inventory */
-let dragData=null;
-document.addEventListener("dragstart",(e)=>{
-  const t=e.target.closest(".slot"); if(!t) return;
-  dragData={ fromHB: t.dataset.hb!==undefined ? Number(t.dataset.hb):null,
-             fromInv: t.dataset.index!==undefined ? Number(t.dataset.index):null };
-  t.classList.add("ghost");
-});
-document.addEventListener("dragend",(e)=>{ const t=e.target.closest(".slot"); if(t) t.classList.remove("ghost"); });
-document.addEventListener("dragover",(e)=>{ if(e.target.closest(".slot")) e.preventDefault(); });
-document.addEventListener("drop",(e)=>{
-  const t=e.target.closest(".slot"); if(!t || !dragData) return;
-  const toHB = t.dataset.hb!==undefined ? Number(t.dataset.hb):null;
-  const toInv = t.dataset.index!==undefined ? Number(t.dataset.index):null;
-  const get = (hb,inv)=> hb!=null ? hotbar[hb] : inventory[inv];
-  const set = (hb,inv,val)=> { if(hb!=null) hotbar[hb]=val; else inventory[inv]=val; };
-  const a = get(dragData.fromHB, dragData.fromInv);
-  const b = get(toHB,toInv);
-  set(dragData.fromHB, dragData.fromInv, b);
-  set(toHB, toInv, a);
-  renderInventory();
-});
-
-/* ========== Game Core ========== */
-const game=$("#game"), ctx=game.getContext("2d");
-const mini=$("#mini"), mtx=mini.getContext("2d");
-function resize(){
-  const rect=game.parentElement.getBoundingClientRect();
-  game.width=Math.floor(rect.width*devicePixelRatio);
-  game.height=Math.floor(rect.height*devicePixelRatio);
-  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-  mini.width=Math.floor($("#miniWrap").clientWidth*devicePixelRatio);
-  mini.height=Math.floor($("#miniWrap").clientHeight*devicePixelRatio);
-  mtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-}
-addEventListener("resize",resize); resize();
-
-/* World + entities */
-let world={ w:2200, h:1500, resources:[], buildings:[], animals:[] };
-for(let i=0;i<140;i++){
-  world.resources.push({x:Math.random()*world.w,y:Math.random()*world.h,type:Math.random()<.55?"tree":"rock"});
-}
-const player={ x:world.w/2, y:world.h/2, r:14, spd:150, hp:100, hunger:70, thirst:70, energy:80, psyche:70, temp:50 };
-/* Animals: type wolf (hostile) / deer (flee) */
-function spawnAnimals(nWolf=8,nDeer=12){
-  for(let i=0;i<nWolf;i++) world.animals.push({type:"wolf",x:Math.random()*world.w,y:Math.random()*world.h,spd:120,dir:Math.random()*Math.PI*2,aggro:false,hp:30});
-  for(let i=0;i<nDeer;i++) world.animals.push({type:"deer",x:Math.random()*world.w,y:Math.random()*world.h,spd:130,dir:Math.random()*Math.PI*2,hp:20});
-}
-spawnAnimals();
-
-/* Day/Night */
-const DAY_MS = 6*60*1000; // 6 minut jeden den
-let worldTime = Math.random()*DAY_MS; // start někde přes den
-function isNight(){ const t=worldTime/DAY_MS; return (t>0.75 || t<0.25); } // noc cca 50 %
-
-/* Input */
-const keys={}; addEventListener("keydown",e=>{
-  keys[e.key.toLowerCase()]=true;
-  if(e.key==="i"||e.key==="I") togglePanel(panels.inv.hidden?"inv":null);
-  if(e.key==="c"||e.key==="C") togglePanel(panels.craft.hidden?"craft":null);
-  if(e.key==="b"||e.key==="B"){ if(buildMode.active){ buildMode.active=false; } else togglePanel(panels.build.hidden?"build":null); }
-  if(e.key==="m"||e.key==="M") miniWrap.hidden=!miniWrap.hidden;
-  if(e.key==="e"||e.key==="E") interact();
-});
-addEventListener("keyup",e=>{ keys[e.key.toLowerCase()]=false; });
-
-/* Build mode */
-const buildMode={active:false,blueprint:null};
-function interact(){
-  // loot resource
-  for(const r of world.resources){
-    const dx=r.x-player.x, dy=r.y-player.y;
-    if(dx*dx+dy*dy < 36*36){
-      if(r.type==="tree"){ addItem({icon:"🪵",qty:1}); }
-      else{ addItem({icon:"🪨",qty:1}); }
-      if(Math.random()<.3){ r.x=-9999; r.y=-9999; }
-      renderInventory(); renderCraft(); log("Sebrány suroviny poblíž."); AudioSys.pickup();
+    // pick berries
+    const bush = bushes.find(b=> b.berries>0 && near(player.x,player.y,b.x,b.y,40));
+    if(bush){
+      bush.berries--; player.inv.berries++;
+      showToast("Sebral jsi bobule (+1)");
+      return;
+    }
+    // eat berries if none nearby and have in inv
+    if(player.inv.berries>0){
+      player.inv.berries--; H.hunger = Math.min(100, H.hunger+12);
+      showToast("Snědl jsi bobule (+12 hlad)");
+      return;
+    }
+    // chop tree (gather wood)
+    const tree = trees.find(t=> t.alive && t.wood>0 && near(player.x,player.y,t.x,t.y,48));
+    if(tree){
+      tree.wood--; if(tree.wood<=0){ tree.alive=false; }
+      player.inv.wood++;
+      H.energy = Math.max(0, H.energy-2);
+      showToast("Získal jsi dřevo (+1)");
+      return;
+    }
+    // rest at fire if near
+    const fire = structures.find(s=> s.type==='fire' && near(player.x,player.y,s.x,s.y,40));
+    if(fire){
+      H.energy = Math.min(100, H.energy+8);
+      showToast("Ohříváš se u ohně (+energie)");
       return;
     }
   }
-  log("Není nic k interakci poblíž.");
-}
-function placeBuilding(px,py){
-  const b=buildings[buildMode.blueprint];
-  if(!canCraft(b.need)){ log("Nemáš suroviny na stavbu."); return; }
-  consume(b.need);
-  world.buildings.push({x:px,y:py,size:b.size,icon:b.icon,name:b.name});
-  renderInventory(); renderCraft();
-  log(`Postaveno: ${b.name}`); AudioSys.build();
-}
-game.addEventListener("click",(e)=>{
-  const rect=game.getBoundingClientRect();
-  const gx=(e.clientX-rect.left)*(game.width/rect.width);
-  const gy=(e.clientY-rect.top)*(game.height/rect.height);
-  const cx = player.x - game.width/devicePixelRatio/2;
-  const cy = player.y - game.height/devicePixelRatio/2;
-  const wx = gx/devicePixelRatio + cx;
-  const wy = gy/devicePixelRatio + cy;
-  if(buildMode.active && buildMode.blueprint!=null) placeBuilding(wx,wy);
-});
 
-/* Camera */
-function cam(){ return { x:player.x - game.width/devicePixelRatio/2, y:player.y - game.height/devicePixelRatio/2 }; }
+  function tryRest(){
+    // only if near fire or shelter
+    const s = structures.find(s=> (s.type==='fire' && near(player.x,player.y,s.x,s.y,60)) || (s.type==='shelter' && near(player.x,player.y,s.x,s.y,60)));
+    if(!s){ showToast("Potřebuješ oheň nebo přístřešek"); return; }
+    // quick nap
+    H.energy = Math.min(100, H.energy + 25);
+    showToast("Odpočíváš (+25 energie)");
+  }
 
-/* Animals AI */
-function aiAnimals(dt){
-  for(const a of world.animals){
-    const dx=player.x-a.x, dy=player.y-a.y;
-    const dist=Math.hypot(dx,dy);
-    const nightAggro = isNight() && a.type==="wolf";
-    // behavior
-    if(a.type==="wolf"){
-      if(dist<220 || nightAggro){ a.aggro=true; }
-      if(a.aggro){
-        a.dir=Math.atan2(dy,dx);
-        a.x+=Math.cos(a.dir)*a.spd*dt;
-        a.y+=Math.sin(a.dir)*a.spd*dt;
-        // damage on contact
-        if(dist<player.r+10){
-          player.hp = clamp(player.hp-25*dt,0,100);
-          AudioSys.hit();
-          if(player.hp<=0) { log("Zemřel jsi! (F5 pro reload)"); }
+  function tryBuild(){
+    if(!player.selectedBuild){ showToast("Otevři crafting (C) a vyber recept"); return; }
+    if(player.selectedBuild==='fire'){
+      if(player.inv.wood<4){ showToast("Chybí dřevo (4)"); return; }
+      player.inv.wood-=4;
+      structures.push({type:'fire', x:Math.round(player.x), y:Math.round(player.y), t:120}); // simple lifetime
+      showToast("Postavil jsi oheň");
+    } else if(player.selectedBuild==='shelter'){
+      if(player.inv.wood<12){ showToast("Chybí dřevo (12)"); return; }
+      player.inv.wood-=12;
+      structures.push({type:'shelter', x:Math.round(player.x), y:Math.round(player.y), decay: 60*60}); // 1h decay
+      showToast("Postavil jsi přístřešek");
+    }
+  }
+
+  function update(dt){
+    if(!player.alive) return;
+    // movement
+    const phase = getPhase(player.ageSec);
+    const sp = player.speed * phase.speed * (H.energy<20?0.7:1);
+    let dx=0, dy=0;
+    if(keys.has('w')) dy-=1;
+    if(keys.has('s')) dy+=1;
+    if(keys.has('a')) dx-=1;
+    if(keys.has('d')) dx+=1;
+    if(dx||dy){
+      const len = Math.hypot(dx,dy); dx/=len; dy/=len;
+      player.x += dx*sp*dt;
+      player.y += dy*sp*dt;
+      H.energy = Math.max(0, H.energy + RATES.energyMove*dt*60);
+    }
+    // clamp to world
+    player.x = Math.max(40, Math.min(WORLD.w-40, player.x));
+    player.y = Math.max(40, Math.min(WORLD.h-40, player.y));
+
+    // world interactions: fire warmth & shelter rest zone
+    let nearHeat = false, nearShelter = false;
+    for(const s of structures){
+      if(s.type==='fire'){
+        s.t -= dt;
+        if(s.t<=0){ // fire turns to ash
+          s.dead = true;
         }
-      }else{
-        // wander
-        a.dir += (Math.random()-.5)*1.2*dt;
-        a.x+=Math.cos(a.dir)*a.spd*0.4*dt;
-        a.y+=Math.sin(a.dir)*a.spd*0.4*dt;
-      }
-    }else if(a.type==="deer"){
-      if(dist<180){ // flee
-        a.dir=Math.atan2(a.y-player.y, a.x-player.x);
-        a.x+=Math.cos(a.dir)*a.spd*dt;
-        a.y+=Math.sin(a.dir)*a.spd*dt;
-      }else{
-        a.dir += (Math.random()-.5)*1.2*dt;
-        a.x+=Math.cos(a.dir)*a.spd*0.35*dt;
-        a.y+=Math.sin(a.dir)*a.spd*0.35*dt;
+        if(near(player.x,player.y,s.x,s.y,FIRE_RADIUS)) nearHeat = true;
+      } else if(s.type==='shelter'){
+        s.decay -= dt;
+        if(s.decay<=0) s.dead = true;
+        if(near(player.x,player.y,s.x,s.y,SHELTER_RADIUS)) nearShelter = true;
       }
     }
-    // bounds
-    a.x=clamp(a.x,10,world.w-10); a.y=clamp(a.y,10,world.h-10);
+    // remove dead structs
+    for(let i=structures.length-1;i>=0;i--) if(structures[i].dead) structures.splice(i,1);
+
+    // vitals core
+    const hMul = phase.hungerMul, tMul = phase.thirstMul;
+    H.hunger = Math.max(0, H.hunger + RATES.hunger*hMul*dt*60);
+    H.thirst = Math.max(0, H.thirst + RATES.thirst*tMul*dt*60);
+
+    // energy regen if resting zone (auto small regen)
+    if(nearHeat || nearShelter){
+      H.energy = Math.min(100, H.energy + RATES.energyRest*dt*60);
+    } else {
+      // very slow passive loss if idle
+      if(!(dx||dy)) H.energy = Math.max(0, H.energy - 0.002*dt*60);
+    }
+
+    // temperature drift to ambient (with heat near fire)
+    const ambient = AMBIENT();
+    const target = nearHeat? Math.min(70, ambient+12) : ambient;
+    const diff = target - H.temp;
+    H.temp += Math.sign(diff)*Math.min(Math.abs(diff), 0.06*dt*60);
+    H.temp = Math.max(0, Math.min(100, H.temp));
+
+    // health damage from zero vitals / temperature extremes
+    let dmg = 0;
+    if(H.hunger<=0) dmg += -RATES.hpStarve*dt*60;
+    if(H.thirst<=0) dmg += -RATES.hpDehyd*dt*60;
+    if(H.temp<35 || H.temp>70) dmg += -RATES.hpColdHot*dt*60;
+    if(dmg>0){ H.hp = Math.max(0, H.hp - dmg); }
+
+    // age
+    player.ageSec += dt;
+    if(player.ageSec>=LIFE_SECS){ // died of old age -> wisdom reward
+      player.wisdom += Math.floor((player.inv.wood + player.inv.berries)/5) + 25;
+      die("Dožil ses stáří. Moudrost +" + player.wisdom);
+    }
+    if(H.hp<=0){
+      die("Zemřel jsi. Příčina: vyčerpání");
+    }
+
+    // bushes cooldown
+    for(const b of bushes){ if(b.cooldown>0) b.cooldown-=dt; if(b.berries<=0 && b.cooldown<=0){ b.berries=1; b.cooldown = 60+rnd(0,60); } }
+
+    // UI
+    ui.phase.textContent = phase.name;
+    ui.age.textContent = `Čas: ${fmtTime(player.ageSec)} / 1:45`;
+    ui.pos.textContent = `x${Math.round(player.x)}, y${Math.round(player.y)}`;
+    ui.hp.style.width = H.hp+"%";
+    ui.hunger.style.width = H.hunger+"%";
+    ui.thirst.style.width = H.thirst+"%";
+    ui.energy.style.width = H.energy+"%";
+    ui.temp.style.width = H.temp+"%";
+    ui.wood.textContent = player.inv.wood;
+    ui.berries.textContent = player.inv.berries;
+    // context hint
+    ui.msg.textContent = contextHint() || "";
   }
-}
 
-/* Loop */
-let last=performance.now();
-function tick(now){
-  const dt=(now-last)/1000; last=now;
-  worldTime = (worldTime + dt*1000) % DAY_MS;
+  function die(reason){
+    player.alive=false;
+    ui.dead.classList.add('open');
+    ui.deadReason.textContent = reason;
+    // store simple legacy
+    try{ localStorage.setItem('legacyWisdom', String((Number(localStorage.getItem('legacyWisdom'))||0) + player.wisdom)); }catch(e){}
+  }
 
-  // movement
-  let vx=0, vy=0;
-  if(keys["w"]||keys["arrowup"]) vy-=1;
-  if(keys["s"]||keys["arrowdown"]) vy+=1;
-  if(keys["a"]||keys["arrowleft"]) vx-=1;
-  if(keys["d"]||keys["arrowright"]) vx+=1;
-  vx += joy.dx; vy += joy.dy;
-  const len=Math.hypot(vx,vy); if(len>0){ vx/=len; vy/=len; AudioSys.step(); }
-  player.x = clamp(player.x + vx*player.spd*dt, 0, world.w);
-  player.y = clamp(player.y + vy*player.spd*dt, 0, world.h);
+  function contextHint(){
+    // hint priorities
+    const r = waterRects.find(r=> player.x>r.x-20 && player.x<r.x+r.w+20 && player.y>r.y-10 && player.y<r.y+r.h+10);
+    if(r) return "E = Pít vodu";
+    const bush = bushes.find(b=> b.berries>0 && near(player.x,player.y,b.x,b.y,40));
+    if(bush) return "E = Sebrat bobule";
+    const tree = trees.find(t=> t.alive && t.wood>0 && near(player.x,player.y,t.x,t.y,48));
+    if(tree) return "E = Získat dřevo";
+    const fire = structures.find(s=> s.type==='fire' && near(player.x,player.y,s.x,s.y,60));
+    if(fire) return "E = Ohřát se • R = Spánek";
+    const shel = structures.find(s=> s.type==='shelter' && near(player.x,player.y,s.x,s.y,60));
+    if(shel) return "R = Spánek v přístřešku";
+    if(player.selectedBuild==='fire') return "F = Postavit oheň (4 dřevo)";
+    if(player.selectedBuild==='shelter') return "F = Postavit přístřešek (12 dřevo)";
+    return "";
+  }
 
-  // vitals
-  player.hunger = clamp(player.hunger - 0.8*dt, 0, 100);
-  player.thirst = clamp(player.thirst - 1.0*dt, 0, 100);
-  player.energy = clamp(player.energy - (len>0? 0.7:0.2)*dt, 0, 100);
-  player.psyche = clamp(player.psyche - (isNight()?0.25:0.1)*dt, 0, 100);
-  player.temp   = clamp( 50 + 16*Math.sin(worldTime/DAY_MS*Math.PI*2), 0, 100);
+  function draw(){
+    // camera
+    const cw = canvas.width, ch = canvas.height;
+    const cx = Math.max(cw/2, Math.min(WORLD.w - cw/2, player.x));
+    const cy = Math.max(ch/2, Math.min(WORLD.h - ch/2, player.y));
+    const ox = Math.floor(cx - cw/2);
+    const oy = Math.floor(cy - ch/2);
 
-  if(player.hunger<=0 || player.thirst<=0) player.hp = clamp(player.hp - 8*dt, 0, 100);
+    // bg
+    ctx.fillStyle = "#1a1c20"; ctx.fillRect(0,0,cw,ch);
 
-  // animals AI
-  aiAnimals(dt);
+    // ground tiles (simple biomes/visual)
+    for(let x=0;x<cw;x+=WORLD.tile){
+      for(let y=0;y<ch;y+=WORLD.tile){
+        const wx = x+ox, wy=y+oy;
+        let c = "#22252b"; // forest
+        if(wy>900 && wy<1150) c="#39321f"; // meadow
+        ctx.fillStyle=c; ctx.fillRect(x,y,WORLD.tile,WORLD.tile);
+      }
+    }
 
-  // bars
-  $("#barHp").style.width = player.hp+"%";
-  $("#barHunger").style.width = player.hunger+"%";
-  $("#barThirst").style.width = player.thirst+"%";
-  $("#barEnergy").style.width = player.energy+"%";
-  $("#barPsyche").style.width = player.psyche+"%";
-  $("#barTemp").style.width = player.temp+"%";
+    // water
+    ctx.fillStyle="#204b73";
+    for(const r of waterRects){
+      ctx.fillRect(r.x-ox, r.y-oy, r.w, r.h);
+    }
 
-  // top time badge
-  const t=worldTime/DAY_MS; const hours = Math.floor(t*24); const mins = Math.floor((t*24-hours)*60);
-  $("#dayBadge").textContent = `Den ${Math.floor((worldTime/DAY_MS))+1} • ${String(hours).padStart(2,"0")}:${String(mins).padStart(2,"0")}${isNight()?" (noc)":" (den)"}`;
+    // trees
+    for(const t of trees){
+      if(!t.alive) continue;
+      ctx.fillStyle="#2f6b3b";
+      ctx.beginPath(); ctx.arc(t.x-ox,t.y-oy,14,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#3b2b13"; ctx.fillRect(t.x-ox-2,t.y-oy+12,4,8);
+    }
 
-  draw();
-  requestAnimationFrame(tick);
-}
+    // bushes
+    for(const b of bushes){
+      ctx.fillStyle= b.berries>0 ? "#5ea34f" : "#3d5337";
+      ctx.beginPath(); ctx.arc(b.x-ox,b.y-oy,10,0,Math.PI*2); ctx.fill();
+    }
 
-/* Draw */
-function draw(){
-  const {x:cx,y:cy}=cam();
-  ctx.clearRect(0,0,game.width,game.height);
-  ctx.save(); ctx.translate(-cx,-cy);
+    // structures
+    for(const s of structures){
+      if(s.type==='fire'){
+        ctx.fillStyle="#8c3f14"; ctx.beginPath(); ctx.arc(s.x-ox,s.y-oy,10,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle="#e2a95a"; ctx.beginPath(); ctx.arc(s.x-ox,s.y-oy,6,0,Math.PI*2); ctx.fill();
+      } else if(s.type==='shelter'){
+        ctx.fillStyle="#6b5a3a"; ctx.fillRect(s.x-ox-14,s.y-oy-10,28,20);
+        ctx.fillStyle="#8a6b41"; ctx.fillRect(s.x-ox-16,s.y-oy-16,32,8);
+      }
+    }
 
-  // ground
-  ctx.fillStyle="#0e1420"; ctx.fillRect(0,0,world.w,world.h);
-  // grid
-  ctx.strokeStyle="#162033"; ctx.lineWidth=1;
-  for(let gx=0;gx<world.w;gx+=80){ ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,world.h); ctx.stroke(); }
-  for(let gy=0;gy<world.h;gy+=80){ ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(world.w,gy); ctx.stroke(); }
+    // player
+    ctx.fillStyle="#d7e2ff";
+    ctx.beginPath(); ctx.arc(player.x-ox, player.y-oy, 10, 0, Math.PI*2); ctx.fill();
+    // direction marker
+    ctx.fillStyle="#92b7ff"; ctx.fillRect(player.x-ox-2, player.y-oy-15, 4, 6);
 
-  // resources
-  for(const r of world.resources){
-    if(r.x<0) continue;
-    if(r.type==="tree"){
-      ctx.fillStyle="#2a7f4f"; ctx.beginPath(); ctx.arc(r.x,r.y,12,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle="#2b3b2c"; ctx.fillRect(r.x-2, r.y+6, 4,10);
-    }else{
-      ctx.fillStyle="#7b86a8"; ctx.beginPath(); ctx.moveTo(r.x-10,r.y+10); ctx.lineTo(r.x+0,r.y-12); ctx.lineTo(r.x+12,r.y+10); ctx.closePath(); ctx.fill();
+    // highlight interactables
+    const hint = contextHint();
+    if(hint){
+      ctx.fillStyle="#000a"; ctx.fillRect(10,10, cw*0.35, 28);
+      ctx.fillStyle="#fff"; ctx.font="14px system-ui"; ctx.fillText(hint, 20, 30);
     }
   }
 
-  // buildings
-  for(const b of world.buildings){
-    ctx.fillStyle="#2c344e"; roundRect(ctx, b.x-b.size/2, b.y-b.size/2, b.size, b.size, 10); ctx.fill();
-    ctx.fillStyle="#c7d2ff"; ctx.font="16px sans-serif"; ctx.fillText(b.icon, b.x-8, b.y+6);
+  function loop(t){
+    const dt = Math.min(0.05, (t-last)/1000); last=t;
+    update(dt);
+    draw();
+    requestAnimationFrame(loop);
   }
+  requestAnimationFrame(loop);
 
-  // animals
-  for(const a of world.animals){
-    if(a.type==="wolf"){ ctx.fillStyle="#c64b4b"; }
-    else{ ctx.fillStyle="#c6d6a7"; }
-    ctx.beginPath(); ctx.arc(a.x,a.y,8,0,Math.PI*2); ctx.fill();
-  }
-
-  // player
-  ctx.fillStyle="#59ffa9"; ctx.beginPath(); ctx.arc(player.x,player.y,player.r,0,Math.PI*2); ctx.fill();
-  ctx.strokeStyle="#1f3b33"; ctx.lineWidth=2; ctx.stroke();
-
-  // build ghost
-  if(buildMode.active && buildMode.blueprint!=null){
-    const b=buildings[buildMode.blueprint];
-    ctx.save(); ctx.globalAlpha=0.35; ctx.strokeStyle="#59ffa9"; ctx.lineWidth=2;
-    ctx.strokeRect(player.x-b.size/2, player.y-b.size/2, b.size, b.size);
-    ctx.restore();
-  }
-
-  // night overlay (s temnější nocí)
-  const night = isNight()? 0.55 : 0.0;
-  if(night>0){
-    const grd = ctx.createRadialGradient(player.x,player.y,40, player.x,player.y,260);
-    grd.addColorStop(0, `rgba(0,0,0,${night*0.1})`);
-    grd.addColorStop(1, `rgba(0,0,0,${night})`);
-    ctx.fillStyle=grd; ctx.fillRect(cx,cy,game.width/devicePixelRatio,game.height/devicePixelRatio);
-  }
-
-  ctx.restore();
-
-  // minimap
-  mtx.clearRect(0,0,mini.width,mini.height);
-  const sx= mini.width/world.w, sy= mini.height/world.h;
-  mtx.fillStyle="#0e1320"; mtx.fillRect(0,0,mini.width,mini.height);
-  mtx.fillStyle="#2a344d"; for(let i=0;i<6;i++){ mtx.fillRect(i*mini.width/6,0,1,mini.height); }
-  for(const r of world.resources){ if(r.x<0) continue; mtx.fillStyle = r.type==="tree" ? "#2de3a0" : "#8aa3ff"; mtx.fillRect(r.x*sx, r.y*sy, 2,2); }
-  for(const b of world.buildings){ mtx.fillStyle="#ffd166"; mtx.fillRect(b.x*sx-2, b.y*sy-2, 4,4); }
-  for(const a of world.animals){ mtx.fillStyle = a.type==="wolf"?"#ff6b6b":"#c6d6a7"; mtx.fillRect(a.x*sx-1, a.y*sy-1, 2,2); }
-  mtx.fillStyle="#59ffa9"; mtx.beginPath(); mtx.arc(player.x*sx, player.y*sy, 3,0,Math.PI*2); mtx.fill();
-}
-
-/* Notifications demo */
-const notifyEl=$("#notify");
-setInterval(()=>{ notifyEl.hidden=false; AudioSys.warn(); setTimeout(()=> notifyEl.hidden=true, 2200); }, 18000);
-
-/* Mobile joystick */
-const joy={ active:false, dx:0, dy:0, base:$("#joystick"), stick:$("#stick") };
-function joyPos(e){
-  const r=joy.base.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2;
-  let x,y; if(e.touches&&e.touches[0]){ x=e.touches[0].clientX; y=e.touches[0].clientY; } else { x=e.clientX; y=e.clientY; }
-  let dx=x-cx, dy=y-cy; const max=r.width*0.42; const len=Math.hypot(dx,dy); if(len>max){ dx=dx/len*max; dy=dy/len*max; }
-  joy.stick.style.transform=`translate(${dx}px,${dy}px)`; joy.dx=dx/max; joy.dy=dy/max;
-}
-joy.base.addEventListener("touchstart",e=>{ joy.active=true; joyPos(e); });
-joy.base.addEventListener("touchmove", e=>{ if(joy.active) joyPos(e); });
-joy.base.addEventListener("touchend",  ()=>{ joy.active=false; joy.dx=0; joy.dy=0; joy.stick.style.transform="translate(-50%,-50%)"; });
-joy.base.addEventListener("mousedown",e=>{ joy.active=true; joyPos(e); });
-addEventListener("mousemove", e=>{ if(joy.active) joyPos(e); });
-addEventListener("mouseup", ()=>{ if(joy.active){ joy.active=false; joy.dx=0; joy.dy=0; joy.stick.style.transform="translate(-50%,-50%)"; } });
-$("#actBtn").addEventListener("click", interact);
-
-/* Save/Load/Reset (LocalStorage) */
-const SAVE_KEY="survive_v2_save";
-function serialize(){
-  return JSON.stringify({
-    worldTime, world, player, inventory, hotbar
-  });
-}
-function deserialize(json){
-  try{
-    const d=JSON.parse(json);
-    if(d.world && d.player){
-      worldTime=d.worldTime||0;
-      world=d.world; // jednoduché – vše v objektu
-      Object.assign(player,d.player);
-      inventory=d.inventory; hotbar=d.hotbar;
-      renderInventory(); renderCraft(); renderBuild();
-      log("Save načten."); return true;
-    }
-  }catch(e){ console.warn(e); }
-  return false;
-}
-$("#btnSave").onclick=()=>{ localStorage.setItem(SAVE_KEY, serialize()); log("Uloženo do LocalStorage."); };
-$("#btnLoad").onclick=()=>{ const data=localStorage.getItem(SAVE_KEY); if(data && deserialize(data)){} else log("Žádný save nenalezen."); };
-$("#btnReset").onclick=()=>{ localStorage.removeItem(SAVE_KEY); location.reload(); };
-addEventListener("beforeunload", ()=>{ localStorage.setItem(SAVE_KEY, serialize()); });
-
-/* Start */
-requestAnimationFrame(tick);
-
-/* Utils */
-function roundRect(ctx,x,y,w,h,r){ if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); return; }
-  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
-  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h);
-  ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
-}
-
-/* Build panel binding after render */
-const buildList=$("#buildList");
-buildList.addEventListener("click",(e)=>{
-  const b=e.target.closest("button"); if(!b) return;
-  // handled in renderBuild -> onclick; left here for clarity
-});
+})();
 </script>
 </body>
 </html>
