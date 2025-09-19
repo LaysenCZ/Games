@@ -2,86 +2,99 @@
 <html lang="cs">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Říše hráčů – Fantasy MMO (MVP)</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dobyvatel – Multiplayer</title>
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <div id="auth-screen" class="card">
-    <h1>Říše hráčů – Fantasy MMO</h1>
-    <p class="muted">Registrace / Přihlášení + výběr avataru & frakce</p>
-
-    <div class="tabs">
-      <button id="tab-login" class="tab active">Přihlášení</button>
-      <button id="tab-register" class="tab">Registrace</button>
+  <header class="topbar">
+    <h1>Dobyvatel – Multiplayer</h1>
+    <nav id="nav-auth">
+      <button id="btnShowLogin">Přihlášení</button>
+      <button id="btnShowRegister">Registrace</button>
+    </nav>
+    <div id="userBox" class="hidden">
+      Přihlášen: <span id="who"></span>
+      <button id="btnLogout">Odhlásit</button>
     </div>
+  </header>
 
-    <div id="login-form" class="form">
-      <input id="login-username" placeholder="Uživatelské jméno" />
-      <input id="login-password" type="password" placeholder="Heslo" />
-      <button id="login-btn">Přihlásit</button>
-      <div class="error" id="login-error"></div>
-    </div>
+  <main class="container">
+    <!-- Auth Panels -->
+    <section id="authPanel" class="card">
+      <div class="tabs">
+        <button class="tab active" data-tab="loginTab">Přihlášení</button>
+        <button class="tab" data-tab="registerTab">Registrace</button>
+      </div>
+      <div id="loginTab" class="tabcontent show">
+        <form id="loginForm">
+          <label>Uživatelské jméno <input required name="username" /></label>
+          <label>Heslo <input type="password" required name="password" /></label>
+          <button type="submit">Přihlásit</button>
+        </form>
+      </div>
+      <div id="registerTab" class="tabcontent">
+        <form id="registerForm">
+          <label>Uživatelské jméno <input required name="username" /></label>
+          <label>Heslo <input type="password" required name="password" /></label>
+          <button type="submit">Registrovat</button>
+        </form>
+      </div>
+    </section>
 
-    <div id="register-form" class="form hidden">
-      <input id="reg-username" placeholder="Uživatelské jméno" />
-      <input id="reg-password" type="password" placeholder="Heslo" />
+    <!-- Lobby -->
+    <section id="lobbyPanel" class="card hidden">
+      <h2>Lobby</h2>
       <div class="row">
-        <label class="file">
-          <input id="avatar-file" type="file" accept="image/*" />
-          Vybrat obrázek (avatar)
-        </label>
-        <button id="use-sample">Náhodný avatar</button>
-      </div>
-      <img id="avatar-preview" class="avatar-preview" alt="Náhled avataru" />
-      <div class="row">
-        <label for="reg-faction">Frakce:</label>
-        <select id="reg-faction">
-          <option value="humans">Lidé</option>
-          <option value="elves">Elfové</option>
-          <option value="necro">Nekromanti</option>
-          <option value="orcs">Orkové</option>
-          <option value="dwarves">Trpaslíci</option>
-        </select>
-      </div>
-      <button id="register-btn">Registrovat</button>
-      <div class="error" id="register-error"></div>
-    </div>
-  </div>
-
-  <div id="game-ui" class="hidden">
-    <div class="topbar">
-      <div class="brand">Říše hráčů (Fantasy)</div>
-      <div class="controls">
-        <button id="music-toggle">🎵 Hudba</button>
-        <button id="sfx-toggle">🔊 Zvuky</button>
-        <button id="logout-btn">Odhlásit</button>
-      </div>
-    </div>
-    <div class="game-wrap">
-      <canvas id="game-canvas" width="900" height="900"></canvas>
-      <div class="sidebar">
-        <div class="panel">
-          <h3>Hráči online</h3>
-          <ul id="players-list"></ul>
+        <button id="btnCreateRoom">Vytvořit místnost</button>
+        <div>
+          <input id="joinCode" placeholder="Kód místnosti (ABC123)" />
+          <button id="btnJoinRoom">Připojit</button>
         </div>
-        <div class="panel">
-          <h3>Chat</h3>
-          <div id="chat-box" class="chat-box"></div>
-          <div class="row">
-            <input id="chat-input" placeholder="Napiš zprávu…" />
-            <button id="chat-send">▶</button>
+      </div>
+      <div id="roomInfo" class="hidden">
+        <p><b>Místnost:</b> <span id="roomName"></span> (<code id="roomId"></code>)</p>
+        <div id="players"></div>
+        <div class="row">
+          <button id="btnLeaveRoom">Opustit místnost</button>
+          <button id="btnStartGame" class="primary">Start hry</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Game -->
+    <section id="gamePanel" class="card hidden">
+      <h2>Hra</h2>
+      <div id="statusBar"></div>
+
+      <div class="game-wrap">
+        <canvas id="board" width="500" height="500"></canvas>
+        <div class="qa">
+          <div id="questionBox">
+            <div id="questionText">Otázka…</div>
+            <div id="answers"></div>
+            <div id="timer"></div>
+            <button id="btnResolve" title="Vyhodnotit po limitu">Vyhodnotit</button>
+          </div>
+          <div class="hint">
+            <p>Pravidla: správná odpověď → máš tah a klikem na mapu dobýváš/posiluješ. Limit 15s.</p>
           </div>
         </div>
-        <div class="panel">
-          <h3>Ovládání</h3>
-          <p>W/A/S/D nebo šipky = pohyb</p>
-        </div>
       </div>
-    </div>
-  </div>
+    </section>
+
+    <!-- Info -->
+    <section class="card">
+      <h2>O hře</h2>
+      <p>
+        Tohle je prototyp „Dobyvatel-like“ hry: <b>Lobby</b> (1), <b>Průběh hry</b> (2), 
+        <b>Otázky</b> (3), <b>Technologie</b> (4 – Node/Socket.io), <b>Extra mechaniky</b> (5 – posilování, útok).
+        Přidán je i <b>uživatelský systém</b> (registrace/přihlášení).
+      </p>
+    </section>
+  </main>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="game.js"></script>
+  <script src="/client.js"></script>
 </body>
 </html>
