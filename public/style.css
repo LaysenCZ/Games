@@ -1,1 +1,108 @@
+:root{
+  --bg: #0f1220;
+  --card: #171a2b;
+  --text: #eef1ff;
+  --muted:#9aa1c3;
+  --accent:#7aa2f7;
+  --good:#7cd992;
+  --warn:#e6b566;
+  --danger:#f26d6d;
+}
 
+*{ box-sizing:border-box; }
+body{
+  margin:0; padding:24px;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial;
+}
+
+.hidden{ display:none; }
+
+.card{
+  max-width: 780px;
+  margin: 0 auto;
+  background: var(--card);
+  border: 1px solid #2a2f4a;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+
+h1{ margin: 0 0 8px; font-size: 28px; }
+.muted{ color: var(--muted); }
+
+.tabs{ display:flex; gap:8px; margin: 16px 0; }
+.tab{
+  background:#222640; color:#cfd6ff;
+  border:1px solid #2b3154; border-radius:10px;
+  padding:10px 16px; cursor:pointer;
+}
+.tab.active{ background:#2b3154; border-color:#3a4380; }
+
+.form{ display:flex; flex-direction:column; gap:10px; }
+.row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.file{ background:#222640; border:1px dashed #374074; padding:8px 12px; border-radius:10px; cursor:pointer; }
+.file input{ display:none; }
+.avatar-preview{ width:84px; height:84px; object-fit:cover; border-radius:50%; border:2px solid #374074; }
+
+button{
+  background: linear-gradient(180deg, #2e3462, #23284b);
+  color: #dae1ff;
+  border:1px solid #39417c;
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: transform .06s ease, filter .2s;
+}
+button:hover{ filter: brightness(1.1); }
+button:active{ transform: translateY(1px); }
+
+.error{ color: var(--danger); min-height: 20px; }
+
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom: 12px;
+}
+.brand{ font-weight:700; letter-spacing:.3px; color:#cfd6ff; }
+.controls{ display:flex; gap:8px; }
+
+.game-wrap{
+  display:grid; grid-template-columns: 1fr 340px; gap: 12px;
+  min-height: calc(100vh - 120px);
+}
+
+canvas{
+  width:100%; height:auto;
+  background: #d6f5d6;
+  border:1px solid #2a2f4a; border-radius:16px;
+}
+
+.sidebar{ display:flex; flex-direction:column; gap:12px; }
+.panel{
+  background: var(--card);
+  border:1px solid #2a2f4a;
+  border-radius: 14px;
+  padding: 12px;
+}
+.panel h3{ margin: 0 0 8px; }
+
+#players-list{
+  list-style:none; margin:0; padding:0; max-height:200px; overflow:auto;
+}
+#players-list li{
+  display:flex; align-items:center; gap:8px; padding:6px 4px;
+}
+#players-list img{ width:22px; height:22px; border-radius:50%; object-fit:cover; border:1px solid #3a4380; }
+
+.chat-box{
+  background:#121528; border:1px solid #2a2f4a; border-radius:10px;
+  height:240px; overflow:auto; padding:8px;
+}
+.chat-msg{ margin-bottom:6px; }
+.chat-name{ color:#9cc4ff; }
+.chat-faction{ color:#7cd992; font-size:12px; margin-left:4px; }
+
+@media (max-width: 1100px){
+  .game-wrap{ grid-template-columns: 1fr; }
+}
