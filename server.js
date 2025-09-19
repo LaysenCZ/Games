@@ -1,157 +1,281 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const crypto = require("crypto");
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import cors from "cors";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
+import { v4 as uuidv4 } from "uuid";
+import dotenv from "dotenv";
+dotenv.config();
+
+const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: { origin: true, credentials: true }
+});
 
-app.use(cors());
-app.use(bodyParser.json({ limit: "5mb" }));
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+app.use(cookieParser());
 app.use(express.static("public"));
 
-// ===== In-memory "DB" (MVP) =====
-const users = new Map(); // username -> { passwordHash, avatarDataUrl }
-const sessions = new Map(); // token -> username
-const players = new Map(); // socket.id -> { username, x, y, avatarDataUrl, faction }
+/** ====== In-memory "DB" ====== */
+const users = new Map(); // username -> {id, username, passHash}
+const rooms = new Map(); // roomId -> {id, name, hostUserId, players:[{id,username,socketId,color}], state}
+const socketsToUser = new Map(); // socket.id -> userId
 
-// jednoduchý hash (MVP) – pro produkci použij bcrypt/scrypt/argon2
-const hash = (s) => crypto.createHash("sha256").update(s).digest("hex");
+/** ====== Questions (sample) ====== */
+const QUESTIONS = [
+  { q: "Hlavní město ČR?", a: ["Praha", "Brno", "Ostrava", "Plzeň"], correct: 0 },
+  { q: "2 + 2 * 2 = ?", a: ["6", "8", "4", "10"], correct: 0 },
+  { q: "Který prvek má značku Fe?", a: ["Měď", "Zlato", "Železo", "Stříbro"], correct: 2 },
+  { q: "Kdo napsal Babičku?", a: ["Božena Němcová", "Karel Čapek", "A. Jirásek", "F. Kafka"], correct: 0 },
+  { q: "Kolik je 10! / 9! ?", a: ["10", "9", "100", "90"], correct: 0 }
+];
 
-// ===== API: Registrace & Login =====
-app.post("/api/register", (req, res) => {
-  const { username, password, avatarDataUrl } = req.body || {};
-  if (!username || !password) {
-    return res.status(400).json({ ok: false, error: "Chybí uživatelské jméno nebo heslo." });
-  }
-  if (users.has(username)) {
-    return res.status(400).json({ ok: false, error: "Uživatel už existuje." });
-  }
-  users.set(username, { passwordHash: hash(password), avatarDataUrl: avatarDataUrl || null });
-  const token = crypto.randomBytes(24).toString("hex");
-  sessions.set(token, username);
-  return res.json({ ok: true, token, username, avatarDataUrl: avatarDataUrl || null });
-});
+function pickRandomQuestion() {
+  return QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+}
 
-app.post("/api/login", (req, res) => {
+/** ====== Auth ====== */
+app.post("/api/register", async (req, res) => {
   const { username, password } = req.body || {};
-  if (!username || !password) {
-    return res.status(400).json({ ok: false, error: "Chybí uživatelské jméno nebo heslo." });
-  }
-  const u = users.get(username);
-  if (!u || u.passwordHash !== hash(password)) {
-    return res.status(401).json({ ok: false, error: "Špatné jméno nebo heslo." });
-  }
-  const token = crypto.randomBytes(24).toString("hex");
-  sessions.set(token, username);
-  return res.json({ ok: true, token, username, avatarDataUrl: u.avatarDataUrl || null });
+  if (!username || !password) return res.status(400).json({ error: "Chybí jméno/heslo" });
+  if (users.has(username)) return res.status(409).json({ error: "Uživatel existuje" });
+  const passHash = await bcrypt.hash(password, 10);
+  const id = uuidv4();
+  users.set(username, { id, username, passHash });
+  const token = jwt.sign({ id, username }, JWT_SECRET, { expiresIn: "7d" });
+  res.json({ token, username });
 });
 
-app.get("/api/me", (req, res) => {
-  const token = req.headers.authorization?.replace("Bearer ", "");
-  if (!token || !sessions.has(token)) return res.status(401).json({ ok: false });
-  const username = sessions.get(token);
+app.post("/api/login", async (req, res) => {
+  const { username, password } = req.body || {};
   const u = users.get(username);
-  res.json({ ok: true, username, avatarDataUrl: u?.avatarDataUrl || null });
+  if (!u) return res.status(401).json({ error: "Špatné přihlašovací údaje" });
+  const ok = await bcrypt.compare(password, u.passHash);
+  if (!ok) return res.status(401).json({ error: "Špatné přihlašovací údaje" });
+  const token = jwt.sign({ id: u.id, username }, JWT_SECRET, { expiresIn: "7d" });
+  res.json({ token, username });
 });
 
-// ===== Socket.IO – multiplayer =====
+function authFromToken(token) {
+  try { return jwt.verify(token, JWT_SECRET); } catch { return null; }
+}
 
-const WORLD = {
-  width: 100,
-  height: 100,
-  specials: [
-    { name: "Dračí hnízdo", x: 90, y: 90, type: "dragon" },
-    { name: "Portál", x: 80, y: 20, type: "portal" },
-    { name: "Magická fontána", x: 60, y: 75, type: "fountain" },
-    { name: "Staré ruiny", x: 30, y: 65, type: "ruins" },
-    { name: "Svatyně bohů", x: 50, y: 50, type: "shrine" }
-  ],
-  regions: [
-    { name: "Lidé (Království)", x: 40, y: 50, r: 15, faction: "humans" },
-    { name: "Elfové (Lesy)", x: 75, y: 65, r: 15, faction: "elves" },
-    { name: "Nekromanti (Bažiny)", x: 20, y: 80, r: 15, faction: "necro" },
-    { name: "Orkové (Pouště)", x: 50, y: 15, r: 15, faction: "orcs" },
-    { name: "Trpaslíci (Hory)", x: 10, y: 40, r: 15, faction: "dwarves" }
-  ]
-};
+/** ====== Game helpers ====== */
+const COLORS = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b"]; // red, blue, green, amber
+
+function createEmptyBoard(size = 5) {
+  const grid = [];
+  for (let y = 0; y < size; y++) {
+    const row = [];
+    for (let x = 0; x < size; x++) {
+      row.push({ owner: null, strength: 0 });
+    }
+    grid.push(row);
+  }
+  return grid;
+}
+
+function initRoomState(room) {
+  room.state = {
+    phase: "lobby",             // lobby -> question -> resolve -> end
+    size: 5,
+    board: createEmptyBoard(5),
+    turnIndex: 0,
+    currentQuestion: null,
+    deadlineTs: null,           // ms
+    answers: {},                // userId -> {answerIndex, at}
+    claimedCountByUser: {},     // userId -> number
+    maxCells: 5*5
+  };
+}
+
+function broadcastRoom(roomId) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  io.to(roomId).emit("room:update", sanitizeRoom(room));
+}
+
+function sanitizeRoom(room) {
+  const { id, name, hostUserId, players, state } = room;
+  return {
+    id, name, hostUserId,
+    players: players.map(p => ({ id: p.id, username: p.username, color: p.color })),
+    state
+  };
+}
+
+function nextPlayerId(room) {
+  if (!room.players.length) return null;
+  return room.players[room.state.turnIndex % room.players.length]?.id;
+}
+
+function nextTurn(room) {
+  room.state.turnIndex = (room.state.turnIndex + 1) % room.players.length;
+}
+
+/** ====== Socket.IO ====== */
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  const user = authFromToken(token);
+  if (!user) return next(new Error("Neautorizováno"));
+  socket.user = user; // {id, username}
+  socketsToUser.set(socket.id, user.id);
+  next();
+});
 
 io.on("connection", (socket) => {
-  // očekáváme handshake s tokenem a avatar/faction
-  socket.on("auth", ({ token, avatarDataUrl, faction }) => {
-    const username = sessions.get(token);
-    if (!username) {
-      socket.emit("auth_error", "Neplatná session, přihlas se znovu.");
-      socket.disconnect(true);
-      return;
+  const user = socket.user;
+
+  socket.on("room:create", ({ name }, cb) => {
+    const id = uuidv4().slice(0, 6).toUpperCase();
+    const room = { id, name: name || `Místnost ${id}`, hostUserId: user.id, players: [] };
+    initRoomState(room);
+    rooms.set(id, room);
+    joinRoom(socket, id, cb);
+  });
+
+  socket.on("room:join", ({ roomId }, cb) => {
+    joinRoom(socket, (roomId || "").trim().toUpperCase(), cb);
+  });
+
+  socket.on("room:leave", (cb) => {
+    for (const [rid, room] of rooms) {
+      const idx = room.players.findIndex(p => p.id === user.id);
+      if (idx >= 0) {
+        room.players.splice(idx, 1);
+        socket.leave(rid);
+        if (!room.players.length) rooms.delete(rid);
+        else broadcastRoom(rid);
+      }
+    }
+    cb && cb({ ok: true });
+  });
+
+  socket.on("game:start", ({ roomId }, cb) => {
+    const room = rooms.get(roomId);
+    if (!room) return cb && cb({ ok: false, error: "Místnost neexistuje" });
+    if (room.hostUserId !== user.id) return cb && cb({ ok: false, error: "Jen host může startovat" });
+    if (room.players.length < 2) return cb && cb({ ok: false, error: "Potřeba alespoň 2 hráči" });
+    initRoomState(room);
+    room.state.phase = "question";
+    room.state.currentQuestion = pickRandomQuestion();
+    room.state.deadlineTs = Date.now() + 15000; // 15s
+    room.state.answers = {};
+    broadcastRoom(roomId);
+    cb && cb({ ok: true });
+  });
+
+  socket.on("game:answer", ({ roomId, answerIndex }, cb) => {
+    const room = rooms.get(roomId);
+    if (!room || room.state.phase !== "question") return;
+    room.state.answers[user.id] = { answerIndex, at: Date.now() };
+    broadcastRoom(roomId);
+    cb && cb({ ok: true });
+  });
+
+  socket.on("game:resolve", ({ roomId }, cb) => {
+    const room = rooms.get(roomId);
+    if (!room || room.state.phase !== "question") return;
+    const q = room.state.currentQuestion;
+    const correcters = Object.entries(room.state.answers)
+      .filter(([uid, ans]) => ans.answerIndex === q.correct)
+      .sort((a,b)=>a[1].at - b[1].at)
+      .map(([uid]) => uid);
+
+    room.state.phase = "resolve";
+    io.to(roomId).emit("game:correcters", { userIds: correcters, correct: q.correct });
+
+    // Pokud někdo odpověděl správně → první má tah na dobytí
+    if (correcters.length) {
+      room.state.turnIndex = room.players.findIndex(p => p.id === correcters[0]);
+      room.state.phase = "claim";
+      broadcastRoom(roomId);
+    } else {
+      // nikdo správně → další otázka
+      room.state.phase = "question";
+      room.state.currentQuestion = pickRandomQuestion();
+      room.state.deadlineTs = Date.now() + 15000;
+      room.state.answers = {};
+      broadcastRoom(roomId);
+    }
+    cb && cb({ ok: true });
+  });
+
+  socket.on("game:claim", ({ roomId, x, y }, cb) => {
+    const room = rooms.get(roomId);
+    if (!room || room.state.phase !== "claim") return cb && cb({ ok: false });
+    const current = nextPlayerId(room);
+    if (current !== user.id) return cb && cb({ ok: false, error: "Nejsi na tahu" });
+
+    const cell = room.state.board?.[y]?.[x];
+    if (!cell) return cb && cb({ ok: false, error: "Mimo mapu" });
+    if (cell.owner && cell.owner !== user.id) {
+      // útok: přepíšeš
+      cell.owner = user.id;
+      cell.strength = 1;
+    } else if (!cell.owner) {
+      // dobytí prázdného
+      cell.owner = user.id;
+      cell.strength = 1;
+    } else {
+      // posílení vlastního
+      cell.strength = Math.min(cell.strength + 1, 3);
     }
 
-    // inicializace hráče
-    const start = pickStartForFaction(faction);
-    players.set(socket.id, {
-      username,
-      x: start.x,
-      y: start.y,
-      avatarDataUrl: avatarDataUrl || users.get(username)?.avatarDataUrl || null,
-      faction: faction || start.faction
-    });
+    room.state.claimedCountByUser[user.id] = (room.state.claimedCountByUser[user.id] || 0) + 1;
 
-    socket.join("world");
-    io.to("world").emit("sfx", { type: "join" }); // zvuk připojení
-    socket.emit("world_init", { world: WORLD });
-    io.to("world").emit("players", getPlayersSnapshot());
-  });
+    // Kontrola konce
+    const claimed = room.state.board.flat().filter(c => !!c.owner).length;
+    if (claimed >= room.state.maxCells) {
+      room.state.phase = "end";
+      broadcastRoom(roomId);
+      return cb && cb({ ok: true });
+    }
 
-  socket.on("move", (dir) => {
-    const p = players.get(socket.id);
-    if (!p) return;
-    const speed = 1;
-    if (dir === "up") p.y = Math.min(WORLD.height, p.y + speed);
-    if (dir === "down") p.y = Math.max(0, p.y - speed);
-    if (dir === "left") p.x = Math.max(0, p.x - speed);
-    if (dir === "right") p.x = Math.min(WORLD.width, p.x + speed);
-    io.to("world").emit("players", getPlayersSnapshot());
-  });
-
-  socket.on("chat", (msg) => {
-    const p = players.get(socket.id);
-    if (!p) return;
-    const safe = ("" + msg).slice(0, 200);
-    io.to("world").emit("chat", { from: p.username, faction: p.faction, text: safe, ts: Date.now() });
+    // Nové kolo: nová otázka
+    nextTurn(room);
+    room.state.phase = "question";
+    room.state.currentQuestion = pickRandomQuestion();
+    room.state.deadlineTs = Date.now() + 15000;
+    room.state.answers = {};
+    broadcastRoom(roomId);
+    cb && cb({ ok: true });
   });
 
   socket.on("disconnect", () => {
-    if (players.has(socket.id)) {
-      players.delete(socket.id);
-      io.to("world").emit("players", getPlayersSnapshot());
-      io.to("world").emit("sfx", { type: "leave" });
+    const uid = socketsToUser.get(socket.id);
+    socketsToUser.delete(socket.id);
+    for (const [rid, room] of rooms) {
+      const idx = room.players.findIndex(p => p.id === uid);
+      if (idx >= 0) {
+        room.players.splice(idx, 1);
+        if (!room.players.length) rooms.delete(rid);
+        else broadcastRoom(rid);
+      }
     }
   });
 });
 
-function getPlayersSnapshot() {
-  const list = [];
-  players.forEach((p, id) => {
-    list.push({ id, username: p.username, x: p.x, y: p.y, avatarDataUrl: p.avatarDataUrl, faction: p.faction });
-  });
-  return list;
+function joinRoom(socket, roomId, cb) {
+  const room = rooms.get(roomId);
+  if (!room) return cb && cb({ ok: false, error: "Místnost nenalezena" });
+  if (room.players.find(p => p.id === socket.user.id)) {
+    socket.join(roomId);
+    broadcastRoom(roomId);
+    return cb && cb({ ok: true, room: sanitizeRoom(room) });
+  }
+  const color = COLORS[room.players.length % COLORS.length];
+  room.players.push({ id: socket.user.id, username: socket.user.username, socketId: socket.id, color });
+  socket.join(roomId);
+  broadcastRoom(roomId);
+  cb && cb({ ok: true, room: sanitizeRoom(room) });
 }
 
-function pickStartForFaction(faction) {
-  const r = WORLD.regions.find((x) => x.faction === faction) || WORLD.regions[0];
-  // mírný random v rámci kruhu
-  const angle = Math.random() * Math.PI * 2;
-  const rad = Math.random() * (r.r - 2);
-  const x = Math.max(0, Math.min(WORLD.width, r.x + Math.cos(angle) * rad));
-  const y = Math.max(0, Math.min(WORLD.height, r.y + Math.sin(angle) * rad));
-  return { x, y, faction: r.faction };
-}
-
-// ===== Start serveru =====
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log("Server běží na http://localhost:" + PORT);
-});
+server.listen(PORT, () => console.log(`Server běží na http://localhost:${PORT}`));
