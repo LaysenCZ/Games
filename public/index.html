@@ -9,40 +9,38 @@
 </head>
 <body>
   <div id="app">
-    <!-- Background -->
+    <!-- Pozadí -->
     <img class="bg" src="/images/city-bg.jpg" alt="City background" />
+    <div class="overlay" aria-hidden="true"></div>
 
-    <!-- Overlay gradient -->
-    <div class="overlay"></div>
-
-    <!-- Top bar -->
+    <!-- Horní lišta -->
     <header class="topbar">
       <div class="logo">
         <img src="/images/logo.svg" alt="City Rumor" />
         <span>CITY RUMOR</span>
       </div>
-      <nav class="nav">
-        <button data-view="menu" class="nav-btn active">Menu</button>
-        <button data-view="howto" class="nav-btn">Jak hrát</button>
-        <button data-view="news" class="nav-btn">Novinky</button>
-        <button data-view="about" class="nav-btn">O hře</button>
-        <button data-view="support" class="nav-btn">Podpora</button>
-        <button data-view="settings" class="nav-btn">Nastavení</button>
+      <nav class="nav" aria-label="Hlavní navigace">
+        <button type="button" data-view="menu" class="nav-btn active">Menu</button>
+        <button type="button" data-view="howto" class="nav-btn">Jak hrát</button>
+        <button type="button" data-view="news" class="nav-btn">Novinky</button>
+        <button type="button" data-view="about" class="nav-btn">O hře</button>
+        <button type="button" data-view="support" class="nav-btn">Podpora</button>
+        <button type="button" data-view="settings" class="nav-btn">Nastavení</button>
       </nav>
     </header>
 
-    <!-- Views -->
+    <!-- Obsah -->
     <main id="views">
       <!-- MENU -->
-      <section id="view-menu" class="view visible">
+      <section id="view-menu" class="view visible" aria-labelledby="title-menu">
         <div class="card center">
-          <h1>City Rumor</h1>
+          <h1 id="title-menu">City Rumor</h1>
           <p class="subtitle">Město, které věří… a podle toho žije.</p>
           <div class="actions">
-            <button id="btn-play" class="btn primary">▶️ Hrát (náhled)</button>
-            <button class="btn ghost" data-view="howto">ℹ️ Jak hrát</button>
+            <button type="button" id="btn-play" class="btn primary">▶️ Hrát (náhled)</button>
+            <button type="button" class="btn ghost" data-view="howto">ℹ️ Jak hrát</button>
           </div>
-          <div class="gallery">
+          <div class="gallery" aria-label="Náhledy">
             <div class="shot">Náhled menu</div>
             <div class="shot">Náhled hry</div>
             <div class="shot">Noviny města</div>
@@ -51,9 +49,9 @@
       </section>
 
       <!-- HOW TO -->
-      <section id="view-howto" class="view">
+      <section id="view-howto" class="view" aria-labelledby="title-howto">
         <div class="card">
-          <h2>Jak hrát</h2>
+          <h2 id="title-howto">Jak hrát</h2>
           <ul class="howto-list">
             <li>💬 Piš <b>drby</b> o tom, co se děje ve městě.</li>
             <li>👍 Získej <b>víru</b> ostatních – když uvěří dost lidí, drb se stane <b>skutečností</b>.</li>
@@ -65,29 +63,29 @@
       </section>
 
       <!-- NEWS -->
-      <section id="view-news" class="view">
+      <section id="view-news" class="view" aria-labelledby="title-news">
         <div class="card">
-          <h2>Novinky</h2>
+          <h2 id="title-news">Novinky</h2>
           <div id="news-list" class="news"></div>
         </div>
       </section>
 
       <!-- ABOUT -->
-      <section id="view-about" class="view">
+      <section id="view-about" class="view" aria-labelledby="title-about">
         <div class="card">
-          <h2>O hře</h2>
+          <h2 id="title-about">O hře</h2>
           <p><b>City Rumor</b> je sociální hra o síle slov v živém městě.</p>
           <p><b>Myšlenka:</b> Co když svět uvěří – a tím se to stane?</p>
-          <p><b>Verze:</b> 0.1.0 (Preview)</p>
+          <p><b>Verze:</b> 0.2.0 (Preview)</p>
           <p><b>Autor:</b> Laysen CZ</p>
         </div>
       </section>
 
       <!-- SUPPORT -->
-      <section id="view-support" class="view">
+      <section id="view-support" class="view" aria-labelledby="title-support">
         <div class="card">
-          <h2>Podpora / Nahlášení</h2>
-          <form id="feedback-form" class="form">
+          <h2 id="title-support">Podpora / Nahlášení</h2>
+          <form id="feedback-form" class="form" autocomplete="on">
             <label>Typ hlášení
               <select name="type" required>
                 <option value="bug">Chyba (bug)</option>
@@ -104,16 +102,16 @@
             <label>Kontakt (volitelné)
               <input type="text" name="contact" placeholder="Email/Discord"/>
             </label>
-            <button class="btn primary" type="submit">Odeslat</button>
-            <div id="feedback-result" class="muted"></div>
+            <button type="submit" class="btn primary">Odeslat</button>
+            <div id="feedback-result" class="muted" role="status" aria-live="polite"></div>
           </form>
         </div>
       </section>
 
       <!-- SETTINGS -->
-      <section id="view-settings" class="view">
+      <section id="view-settings" class="view" aria-labelledby="title-settings">
         <div class="card">
-          <h2>Nastavení</h2>
+          <h2 id="title-settings">Nastavení</h2>
           <div class="settings">
             <label>
               Hlasitost hudby
@@ -133,8 +131,8 @@
         </div>
       </section>
 
-      <!-- GAME (NÁHLED) -->
-      <section id="view-game" class="view">
+      <!-- GAME -->
+      <section id="view-game" class="view" aria-labelledby="title-game">
         <div class="hud">
           <div class="meters">
             <div class="meter"><span>💰 Ekonomika</span><progress id="m-eco" min="0" max="100" value="70"></progress></div>
@@ -144,12 +142,12 @@
           </div>
           <div class="room">
             <div class="rumor-input">
-              <input id="rumor-text" type="text" placeholder="Napiš drb… (Enter odešle)" maxlength="240"/>
+              <input id="rumor-text" type="text" placeholder="Napiš drb… (Enter odešle)" maxlength="240" />
             </div>
             <div id="rumor-list" class="rumors"></div>
           </div>
         </div>
-        <button class="btn back" data-view="menu">⟵ Zpět do menu</button>
+        <button type="button" class="btn back" data-view="menu">⟵ Zpět do menu</button>
       </section>
     </main>
   </div>
@@ -159,8 +157,8 @@
   <audio id="audio-game" src="/audio/game-theme.mp3" loop></audio>
   <audio id="sfx-click" src="/audio/click.wav"></audio>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="/app.js"></script>
-  <script src="/game.js"></script>
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/app.js" defer></script>
+  <script src="/game.js" defer></script>
 </body>
 </html>
