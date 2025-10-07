@@ -20,33 +20,32 @@ const io = new Server(server, {
 });
 
 // --- middlewares
-app.use(helmet({
-  contentSecurityPolicy: false
-}));
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan("tiny"));
 app.use(express.static(path.join(__dirname, "public")));
 
-// --- storage (Mongo, nebo fallback do souboru)
+// --- storage (Mongo nebo soubor)
 const storage = new Storage({
   mongoUri: process.env.MONGODB_URI,
   fallbackFile: path.join(__dirname, "feedback.json")
 });
 await storage.init();
 
-// --- API: zdraví
+// --- health
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, env: process.env.NODE_ENV || "production", time: new Date().toISOString() });
 });
 
-// --- API: novinky (můžeš později napojit na DB)
+// --- news
 const NEWS = [
   { date: "2025-10-07", text: "První veřejný náhled – menu, info, náhled hry, audio." },
-  { date: "2025-10-08", text: "Přidán formulář podpory: nahlášení chyb a zlepšováky." }
+  { date: "2025-10-08", text: "Přidán formulář podpory: nahlášení chyb a zlepšováky." },
+  { date: "2025-10-09", text: "Fix: overlay neblokuje kliknutí, vylepšena navigace." }
 ];
 app.get("/api/news", (req, res) => res.json(NEWS));
 
-// --- API: feedback (bug reporty / nápady)
+// --- feedback
 app.post("/api/feedback", async (req, res) => {
   try {
     const { type, title, message, contact } = req.body || {};
@@ -61,20 +60,14 @@ app.post("/api/feedback", async (req, res) => {
   }
 });
 
-// --- Socket.io – základní kanály (připraveno pro multiplayer)
+// --- socket.io
 io.on("connection", (socket) => {
-  // připojení do místnosti města (zatím 1 default)
   const room = "city-default";
   socket.join(room);
-
-  // ukázkový ping
   socket.emit("server:hello", { msg: "Vítej v City Rumor (preview)!" });
 
-  // příjem „lokálních“ rumorů (zatím neběží na serveru – jen broadcast do místnosti)
   socket.on("client:rumor", (payload) => {
-    // Validace min
     if (!payload?.text) return;
-    // Broadcast do místnosti (bez perzistence – v preview stačí)
     io.to(room).emit("server:rumor", {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
       text: payload.text.trim().slice(0, 240),
@@ -82,11 +75,8 @@ io.on("connection", (socket) => {
       time: new Date().toISOString(),
     });
   });
-
-  socket.on("disconnect", () => {});
 });
 
-// --- start
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`City Rumor server running on :${PORT}`);
