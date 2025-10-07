@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>City Rumor – Preview</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Background -->
+    <img class="bg" src="/images/city-bg.jpg" alt="City background" />
+
+    <!-- Overlay gradient -->
+    <div class="overlay"></div>
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="logo">
+        <img src="/images/logo.svg" alt="City Rumor" />
+        <span>CITY RUMOR</span>
+      </div>
+      <nav class="nav">
+        <button data-view="menu" class="nav-btn active">Menu</button>
+        <button data-view="howto" class="nav-btn">Jak hrát</button>
+        <button data-view="news" class="nav-btn">Novinky</button>
+        <button data-view="about" class="nav-btn">O hře</button>
+        <button data-view="support" class="nav-btn">Podpora</button>
+        <button data-view="settings" class="nav-btn">Nastavení</button>
+      </nav>
+    </header>
+
+    <!-- Views -->
+    <main id="views">
+      <!-- MENU -->
+      <section id="view-menu" class="view visible">
+        <div class="card center">
+          <h1>City Rumor</h1>
+          <p class="subtitle">Město, které věří… a podle toho žije.</p>
+          <div class="actions">
+            <button id="btn-play" class="btn primary">▶️ Hrát (náhled)</button>
+            <button class="btn ghost" data-view="howto">ℹ️ Jak hrát</button>
+          </div>
+          <div class="gallery">
+            <div class="shot">Náhled menu</div>
+            <div class="shot">Náhled hry</div>
+            <div class="shot">Noviny města</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOW TO -->
+      <section id="view-howto" class="view">
+        <div class="card">
+          <h2>Jak hrát</h2>
+          <ul class="howto-list">
+            <li>💬 Piš <b>drby</b> o tom, co se děje ve městě.</li>
+            <li>👍 Získej <b>víru</b> ostatních – když uvěří dost lidí, drb se stane <b>skutečností</b>.</li>
+            <li>🏛️ Ovlivňuj <b>ekonomiku, stabilitu, spokojenost</b> a <b>chaos</b> města.</li>
+            <li>🎭 Plň svůj <b>tajný cíl</b> (Starosta, Manipulátor, Novinář, Občan, Věštec...).</li>
+            <li>🗞️ Na konci dne vychází <b>Noviny</b> s dopady a titulky.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- NEWS -->
+      <section id="view-news" class="view">
+        <div class="card">
+          <h2>Novinky</h2>
+          <div id="news-list" class="news"></div>
+        </div>
+      </section>
+
+      <!-- ABOUT -->
+      <section id="view-about" class="view">
+        <div class="card">
+          <h2>O hře</h2>
+          <p><b>City Rumor</b> je sociální hra o síle slov v živém městě.</p>
+          <p><b>Myšlenka:</b> Co když svět uvěří – a tím se to stane?</p>
+          <p><b>Verze:</b> 0.1.0 (Preview)</p>
+          <p><b>Autor:</b> Laysen CZ</p>
+        </div>
+      </section>
+
+      <!-- SUPPORT -->
+      <section id="view-support" class="view">
+        <div class="card">
+          <h2>Podpora / Nahlášení</h2>
+          <form id="feedback-form" class="form">
+            <label>Typ hlášení
+              <select name="type" required>
+                <option value="bug">Chyba (bug)</option>
+                <option value="idea">Zlepšovák (feature)</option>
+                <option value="other">Jiné</option>
+              </select>
+            </label>
+            <label>Název
+              <input type="text" name="title" placeholder="Krátký název" required maxlength="80"/>
+            </label>
+            <label>Popis
+              <textarea name="message" placeholder="Co přesně se děje / co navrhuješ?" required rows="5" maxlength="1200"></textarea>
+            </label>
+            <label>Kontakt (volitelné)
+              <input type="text" name="contact" placeholder="Email/Discord"/>
+            </label>
+            <button class="btn primary" type="submit">Odeslat</button>
+            <div id="feedback-result" class="muted"></div>
+          </form>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="view-settings" class="view">
+        <div class="card">
+          <h2>Nastavení</h2>
+          <div class="settings">
+            <label>
+              Hlasitost hudby
+              <input id="music-volume" type="range" min="0" max="1" step="0.01" value="0.6"/>
+            </label>
+            <label>
+              Hlasitost efektů
+              <input id="sfx-volume" type="range" min="0" max="1" step="0.01" value="0.9"/>
+            </label>
+            <label class="row">
+              <input id="music-toggle" type="checkbox" checked/> Zapnout hudbu
+            </label>
+            <label class="row">
+              <input id="sfx-toggle" type="checkbox" checked/> Zapnout efekty
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME (NÁHLED) -->
+      <section id="view-game" class="view">
+        <div class="hud">
+          <div class="meters">
+            <div class="meter"><span>💰 Ekonomika</span><progress id="m-eco" min="0" max="100" value="70"></progress></div>
+            <div class="meter"><span>🏛️ Stabilita</span><progress id="m-sta" min="0" max="100" value="65"></progress></div>
+            <div class="meter"><span>❤️ Spokojenost</span><progress id="m-hap" min="0" max="100" value="75"></progress></div>
+            <div class="meter"><span>🔥 Chaos</span><progress id="m-cha" min="0" max="100" value="30"></progress></div>
+          </div>
+          <div class="room">
+            <div class="rumor-input">
+              <input id="rumor-text" type="text" placeholder="Napiš drb… (Enter odešle)" maxlength="240"/>
+            </div>
+            <div id="rumor-list" class="rumors"></div>
+          </div>
+        </div>
+        <button class="btn back" data-view="menu">⟵ Zpět do menu</button>
+      </section>
+    </main>
+  </div>
+
+  <!-- Audio -->
+  <audio id="audio-menu" src="/audio/menu-theme.mp3" loop></audio>
+  <audio id="audio-game" src="/audio/game-theme.mp3" loop></audio>
+  <audio id="sfx-click" src="/audio/click.wav"></audio>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/app.js"></script>
+  <script src="/game.js"></script>
+</body>
+</html>
